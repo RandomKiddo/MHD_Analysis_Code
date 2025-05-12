@@ -126,6 +126,9 @@ def plot(prim_file: str, uov_file: str, output_path: str, deg_th: int=45,
     mpl.rcParams["savefig.directory"] = os.path.dirname(output_path)
     plt.savefig(path, dpi=300, format='png')
 
+    # Close the plot
+    plt.close()
+
 if __name__ == '__main__':
     # Argument parsing for command-line usage
     parser = argparse.ArgumentParser(prog='1D Profile Plotter Athena++', 
@@ -137,7 +140,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '-save', type=str, action='store',
         help='The location and file name to store the PNG file outputted, possibly including path.')
     parser.add_argument('-dth', '-degth', type=int, action='store', default=45,
-        help='The int degree value to plot the profiles for. Defaults to 45 deg.')
+        help='The int theta degree value to plot the profiles for. Defaults to 45 deg.')
     parser.add_argument('-nth', type=int, action='store', default=128,
         help='The number of theta-direction cells in the simulation. Defaults to 128.')
     parser.add_argument('-thmax', type=int, action='store', default=180,
@@ -146,10 +149,17 @@ if __name__ == '__main__':
         help='If the simulation is isothermal so P=rho*cT^2.')
     parser.add_argument('-cT', type=float, action='store', default=5e9,
         help='The isothermal sound speed, if required, in cm/s. Defaults to 5e9 cm/s.')
+    parser.add_argument('-dphi', '-degphi', type=int, action='store', default=180,
+        help='The int phi degree value to plot the profiles for. Defaults to 180 deg.')
+    parser.add_argument('-nphi', type=int, action='store', default=1,
+        help='The number of phi-direction cells in the simulation. Defaults to 1.')
+    parser.add_argument('-phimax', type=int, action='store', default=360,
+        help='The max phi value of the simulation, in degrees. Defaults to 360 deg.')
 
     args = parser.parse_args()
 
     plot(prim_file=args.prim, uov_file=args.uov, output_path=args.s, deg_th=args.dth, 
-        n_th=args.nth, th_max=args.thmax, iso=args.iso, cT=args.cT)
+        n_th=args.nth, th_max=args.thmax, iso=args.iso, cT=args.cT, deg_phi=args.dphi,
+        n_phi=args.nphi, phi_max=args.phimax)
 
     
