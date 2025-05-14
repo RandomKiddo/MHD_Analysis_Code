@@ -11,23 +11,45 @@ import math
 import argparse
 import warnings
 
+from tqdm import tqdm
+
 def plot(prim_file: str, uov_file: str, output_path: str, deg_th: int=45,
     n_th: int = 128, th_max: float = 180, iso: bool = False, cT: float = 5e9,
-    deg_phi: int = 180, n_phi: int = 1, phi_max: float = 360):
+    deg_phi: int = 180, n_phi: int = 1, phi_max: float = 360, r: bool = False) -> None:
     """
-    Plots the 1D profiles using the Athena++ simulation dataframe files.
-    :param prim_file: The string path to the prim athdf file to use.
-    :param uov_file: The string path to the uov athdf file to use.
-    :param output_path: The string output path to output the plot. 
-    :param deg_th: The int theta degree value to plot for. Defaults to 45.
-    :param n_th: The number of cells in the theta direction. Defaults to 128.
-    :param th_max: The maximum value in the theta direction in degrees. Defaults to 180.
-    :param iso: If the simulation is isothermal, so P=rho*cT^2. Defaults to False.
-    :param cT: Isothermal sound speed, used when needed, in cm/s. Defaults to 5e9.
-    :param deg_phi: The int phi degree value to plot for. Defaults to 180.
-    :param n_phi: The number of cells in the phi direction. Defaults to 1.
-    :param phi_max: The maximum value in the phi direction in degrees. Defaults to 360. 
+    Plots the 1D profiles using the Athena++ simulation dataframe files. <br>
+    :param prim_file: The string path to the prim athdf file to use. <br>
+    :param uov_file: The string path to the uov athdf file to use. <br>
+    :param output_path: The string output path to output the plot with filename and extension. <br>
+    :param deg_th: The int theta degree value to plot for. Defaults to 45. <br>
+    :param n_th: The number of cells in the theta direction. Defaults to 128. <br>
+    :param th_max: The maximum value in the theta direction in degrees. Defaults to 180. <br>
+    :param iso: If the simulation is isothermal, so P=rho*cT^2. Defaults to False. <br>
+    :param cT: Isothermal sound speed, used when needed, in cm/s. Defaults to 5e9. <br>
+    :param deg_phi: The int phi degree value to plot for. Defaults to 180. <br>
+    :param n_phi: The number of cells in the phi direction. Defaults to 1. <br>
+    :param phi_max: The maximum value in the phi direction in degrees. Defaults to 360. <br>
+    :param r: If the function should be used recursively in a directory. If so, give directories not file paths, with prim_file=uov_file.
     """
+
+    if r: # Recursive behavior
+        assert prim_file == uov_file
+
+        # Count # of dataframes
+        file_count = 0
+        for fn in os.listdir(prim_file):
+            if fn.endswith('.athdf') and not fn.startswith('.'):
+                file_count += 1
+        
+        # Recurisve functionality
+        for _ in tqdm(range(file_count//2)):
+            prim = os.path.join(prim_file, f'parker.prim.{_:05d}.athdf')
+            uov = os.path.join(uov_file, f'parker.uov.{_:05d}.athdf')
+            output = os.path.join(output_path, f'{_:05d}.png')
+
+            plot(prim, uov, output, deg_th, n_th, th_max, iso, cT, deg_phi, n_phi, phi_max, r=False)
+        return # Cut function
+            
 
     # Read data frames
     df = athena_read.athdf(prim_file)
@@ -118,6 +140,10 @@ def plot(prim_file: str, uov_file: str, output_path: str, deg_th: int=45,
     axes[1][2].set_ylabel(r'$\dot{M}\ (M_{\rm sun}\ {\rm s}^{-1})$')
     axes[1][2].tick_params(axis='both', top=True, right=True, which='both', direction='in')
 
+    # Title
+    time = df['Time']
+    plt.suptitle(fr'Profile Plot, $t\approx {round(time,5)},\ \theta\approx {deg_th}^\circ,\ \phi\approx {deg_phi}^\circ$')
+
     # Tight layout
     plt.tight_layout()
 
@@ -155,11 +181,13 @@ if __name__ == '__main__':
         help='The number of phi-direction cells in the simulation. Defaults to 1.')
     parser.add_argument('-phimax', type=int, action='store', default=360,
         help='The max phi value of the simulation, in degrees. Defaults to 360 deg.')
+    parser.add_argument('-r', action='store_true',
+        help='If the function should be used recursively in a directory. If so, give directories not file paths, with flags prim=uov.')
 
     args = parser.parse_args()
 
     plot(prim_file=args.prim, uov_file=args.uov, output_path=args.s, deg_th=args.dth, 
         n_th=args.nth, th_max=args.thmax, iso=args.iso, cT=args.cT, deg_phi=args.dphi,
-        n_phi=args.nphi, phi_max=args.phimax)
+        n_phi=args.nphi, phi_max=args.phimax, r=args.r)
 
     
