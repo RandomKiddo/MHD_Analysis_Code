@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.cm as cm
+import sys
+sys.path.insert(0, '/Volumes/RESEARCHUSB/Research/DEBUG/vis/python')
 import athena_read
 import argparse
 import cmasher as cmr
@@ -11,18 +13,20 @@ import scipy.ndimage
 
 from scipy.interpolate import RectBivariateSpline
 
-def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, density: int = 15,
-        vr_range: tuple = None, vphi_range: tuple = None, tol: float = 1e-15) -> None:
+def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, density: float = 15,
+        vr_range: tuple = None, vphi_range: tuple = None, tol: float = 1e-15,
+        title: str = r'$P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}$') -> None:
     """
-    Plots the 1D profiles using the Athena++ simulation dataframe files.
-    :param prim_file: The string path to the prim athdf file to use.
-    :param uov_file: The string path to the uov athdf file to use.
-    :param output_path: The string output path to output the plot.
-    :param obound: Float value representing outer boundary for plotting in cm. Defaults to None.
-    :param density: The density of field lines to plot in the streamplot. Defaults to 15.
-    :param vr_range: R-velocity bar range to use. Defaults to None (meaning matplotlib decides).
-    :param vphi_range: Phi-velocity bar range to use. Defaults to None (meaning matplotlib decides).
-    :param tol: The fast magnetosonic surface tolerance to use when making the contour line. 
+    Plots the 1D profiles using the Athena++ simulation dataframe files. <br>
+    :param prim_file: The string path to the prim athdf file to use. <br>
+    :param uov_file: The string path to the uov athdf file to use. <br>
+    :param output_path: The string output path to output the plot. <br>
+    :param obound: Float value representing outer boundary for plotting in cm. Defaults to None. <br>
+    :param density: The density of field lines to plot in the streamplot. Defaults to 15. <br>
+    :param vr_range: R-velocity bar range to use. Defaults to None (meaning matplotlib decides). <br>
+    :param vphi_range: Phi-velocity bar range to use. Defaults to None (meaning matplotlib decides). <br>
+    :param tol: The fast magnetosonic surface tolerance to use when making the contour line. Defaults to 1e-15. <br>
+    :param title: The title to use for the plot. Defaults to a LaTeX-set rotating magnetar of set luminosity title.
     """
 
     # Read the Athena data frames
@@ -36,7 +40,7 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     # Get the polar projection for matplotlib
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
 
-    print(f"Time: {df['Time']}")
+    #print(f"Time: {df['Time']}")
 
     # Get the minimum and maximum r values
     r_min = np.min(df['x1v'][:])
@@ -90,8 +94,11 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
         res2 = ax.pcolormesh(theta, r, vphi, cmap=cmr.wildfire_r, shading='gouraud', vmin=vphi_range[0], vmax=vphi_range[1])
 
     # Colorbars for the colormesh profiles
-    cbar = plt.colorbar(res1, ax=ax, label=r'$v_r\ \left[10^9\ {\rm cm}\ {\rm s}^{-1}\right]$', location='left', fraction=0.05)
-    cbar = plt.colorbar(res2, ax=ax, label=r'$v_{\phi}\ \left[10^9\ {\rm cm}\ {\rm s}^{-1}\right]$', location='right', fraction=0.05)
+    cbar = plt.colorbar(res1, ax=ax, label=r'$v_r\ \left[10^9\ {\rm cm}\ {\rm s}^{-1}\right]$', location='left', fraction=0.05, extend='max')
+    if not np.all(vphi == 0):
+        cbar = plt.colorbar(res2, ax=ax, label=r'$v_{\phi}\ \left[10^9\ {\rm cm}\ {\rm s}^{-1}\right]$', location='right', fraction=0.05, extend='both')
+    else:
+        cbar = plt.colorbar(res2, ax=ax, label=r'$v_{\phi}\ \left[10^9\ {\rm cm}\ {\rm s}^{-1}\right]$', location='right', fraction=0.05)
 
     # Calculate different wind speeds
     cs = df_uov['dt3'][0]/10e9
@@ -192,7 +199,7 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     ax.set_yticklabels([])
 
     # Set title
-    ax.set_title(r'$P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}$')
+    ax.set_title(f'${title}$')  # For use with LaTeX
 
     plt.gca().set_aspect('equal')
     plt.tight_layout()
@@ -214,11 +221,39 @@ if __name__ == '__main__':
     parser.add_argument('-s', '-save', type=str, action='store',
                         help='The location and file name to store the PNG file outputted, possibly including path.')
     parser.add_argument('-ob', '-obound', type=float, action='store', default=None,
-                        help='The outer boundary max value float for plotting in cm.')
-    parser.add_argument('-d', '-dens', type=int, action='store', default=15,
-                        help='The density of the streamplot lines to plot.')
+                        help='The outer boundary max value float for plotting in cm. Defaults to None.')
+    parser.add_argument('-d', '-dens', type=float, action='store', default=15,
+                        help='The density of the streamplot lines to plot. Defaults to 15.')
+    parser.add_argument('-vrmin', type=float, action='store', default=None,
+                        help='The r-velocity minimum to use in the colorbar. Defaults to None.')
+    parser.add_argument('-vrmax', type=float, action='store', default=None,
+                        help='The r-velocity maximum to use in the colorbar. Defaults to None.')
+    parser.add_argument('-vphimin', type=float, action='store', default=None,
+                        help='The phi-velocity minimum to use in the colorbar. Defaults to None.')
+    parser.add_argument('-vphimax', type=float, action='store', default=None,
+                        help='The phi-velocity maximum to use in the colorbar. Defaults to None.')
+    parser.add_argument('-tol', action='store', type=float, default=1e-15,
+                        help='The fast magnetosonic tolerance to use when plotting. Defaults to 1e-15.')
+    parser.add_argument('-t', '-title', type=str, action='store', default=r'$P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}$',
+                        help='The title to use for the animation plot. Defaults to a LaTeX-set rotating magnetar of set luminosity title.')
 
     args = parser.parse_args()
 
-    plot(prim_file=args.prim, uov_file=args.uov, output_path=args.s, obound=args.ob, density=args.d)
+    vr_range = []
+    vphi_range = []
+    if args.vrmin is None or args.vrmax is None:
+        vr_range = None
+    else:
+        vr_range.append(args.vrmin)
+        vr_range.append(args.vrmax)
+        vr_range = tuple(vr_range)
+    if args.vphimin is None or args.vphimax is None:
+        vphi_range = None
+    else:
+        vphi_range.append(args.vphimin)
+        vphi_range.append(args.vphimax)
+        vphi_range = tuple(vphi_range)
+
+    plot(prim_file=args.prim, uov_file=args.uov, output_path=args.s, obound=args.ob, density=args.d,
+         vr_range=vr_range, vphi_range=vphi_range, tol=args.tol, title=args.t)
 

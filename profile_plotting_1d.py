@@ -91,7 +91,8 @@ def plot(prim_file: str, uov_file: str, output_path: str, deg_th: int=45,
         y1 = df['rho'][phi][theta]*(cT**2)
     axes[0][2].plot(x, y1, label=r'${\rm Gas}$')
     y2 = (np.power(df['Bcc1'][phi][theta], 2) + np.power(df['Bcc2'][phi][theta], 2) + np.power(df['Bcc3'][phi][theta], 2))/2
-    axes[0][2].plot(x, y2, linestyle='dotted', label=r'${\rm Magnetic}$', color='#1f77b4')
+    if np.any(y2):
+        axes[0][2].plot(x, y2, linestyle='dotted', label=r'${\rm Magnetic}$', color='#1f77b4')
     axes[0][2].legend()
     axes[0][2].set_xscale('log')
     axes[0][2].set_yscale('log')
@@ -111,11 +112,16 @@ def plot(prim_file: str, uov_file: str, output_path: str, deg_th: int=45,
     y1 = df['vel1'][phi][theta]
     axes[1][1].plot(x, y1, label=r'$v_{r}$')
     y2 = df['vel3'][phi][theta]
-    axes[1][1].plot(x, y2, linestyle='--', label=r'$v_{\phi}$', color='#1f77b4')
+    if np.any(y2):
+        axes[1][1].plot(x, y2, linestyle='--', label=r'$v_{\phi}$', color='#1f77b4')
     y3 = df['Bcc1'][phi][theta]/(np.sqrt(4 * math.pi) * np.sqrt(df['rho'][phi][theta]))
-    axes[1][1].plot(x, y3, linestyle='-.', label=r'$\frac{B_r}{\sqrt{4\pi\rho}}$', color='#1f77b4')
-    y4 = df_uov['dt3'][phi][theta]
-    axes[1][1].plot(x, y4, linestyle='dotted', label=r'$c_{s}$', color='#1f77b4')
+    if np.any(y3):
+        axes[1][1].plot(x, y3, linestyle='-.', label=r'$\frac{B_r}{\sqrt{4\pi\rho}}$', color='#1f77b4')
+    if not iso:
+        y4 = df_uov['dt3'][phi][theta]
+        axes[1][1].plot(x, y4, linestyle='dotted', label=r'$c_{s}$', color='#1f77b4')
+    else:
+        axes[1][1].axhline(y=cT, linestyle='dotted', label=r'$c_{T}$', color='#1f77b4')
     axes[1][1].legend()
     axes[1][1].set_xscale('log')
     try:
@@ -158,31 +164,31 @@ def plot(prim_file: str, uov_file: str, output_path: str, deg_th: int=45,
 if __name__ == '__main__':
     # Argument parsing for command-line usage
     parser = argparse.ArgumentParser(prog='1D Profile Plotter Athena++', 
-        description='Plots 1D profiles from Athena++ magnetar wind simulations.')
+                                     description='Plots 1D profiles from Athena++ magnetar wind simulations.')
     parser.add_argument('-prim', type=str, action='store', 
-        help='The filename of the prim athdf file, possibly including path.')
+                        help='The filename of the prim athdf file, possibly including path.')
     parser.add_argument('-uov', type=str, action='store',
-        help='The filename of the uov athdf file, possibly including path.')
+                        help='The filename of the uov athdf file, possibly including path.')
     parser.add_argument('-s', '-save', type=str, action='store',
-        help='The location and file name to store the PNG file outputted, possibly including path.')
+                        help='The location and file name to store the PNG file outputted, possibly including path.')
     parser.add_argument('-dth', '-degth', type=int, action='store', default=45,
-        help='The int theta degree value to plot the profiles for. Defaults to 45 deg.')
+                        help='The int theta degree value to plot the profiles for. Defaults to 45 deg.')
     parser.add_argument('-nth', type=int, action='store', default=128,
-        help='The number of theta-direction cells in the simulation. Defaults to 128.')
+                        help='The number of theta-direction cells in the simulation. Defaults to 128.')
     parser.add_argument('-thmax', type=int, action='store', default=180,
-        help='The max theta value of the simulation, in degrees. Defaults to 180 deg.')
+                        help='The max theta value of the simulation, in degrees. Defaults to 180 deg.')
     parser.add_argument('-iso', action='store_true',
-        help='If the simulation is isothermal so P=rho*cT^2.')
+                        help='If the simulation is isothermal so P=rho*cT^2.')
     parser.add_argument('-cT', type=float, action='store', default=5e9,
-        help='The isothermal sound speed, if required, in cm/s. Defaults to 5e9 cm/s.')
+                        help='The isothermal sound speed, if required, in cm/s. Defaults to 5e9 cm/s.')
     parser.add_argument('-dphi', '-degphi', type=int, action='store', default=180,
-        help='The int phi degree value to plot the profiles for. Defaults to 180 deg.')
+                        help='The int phi degree value to plot the profiles for. Defaults to 180 deg.')
     parser.add_argument('-nphi', type=int, action='store', default=1,
-        help='The number of phi-direction cells in the simulation. Defaults to 1.')
+                        help='The number of phi-direction cells in the simulation. Defaults to 1.')
     parser.add_argument('-phimax', type=int, action='store', default=360,
-        help='The max phi value of the simulation, in degrees. Defaults to 360 deg.')
+                        help='The max phi value of the simulation, in degrees. Defaults to 360 deg.')
     parser.add_argument('-r', action='store_true',
-        help='If the function should be used recursively in a directory. If so, give directories not file paths, with flags prim=uov.')
+                        help='If the function should be used recursively in a directory. If so, give directories not file paths, with flags prim=uov.')
 
     args = parser.parse_args()
 
