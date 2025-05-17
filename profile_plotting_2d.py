@@ -212,6 +212,7 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
 
 
 if __name__ == '__main__':
+    # Argument parsing for command-line usage
     parser = argparse.ArgumentParser(prog='2D Profile Plotter Athena++',
                                     description='Plots 2D profiles from Athena++ magnetar wind simulations.')
     parser.add_argument('-prim', type=str, action='store',

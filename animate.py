@@ -34,7 +34,8 @@ def animate(path: str, output_path: str, ext: str = 'png') -> None:
 def receive(path: str) -> Tuple[List, List]:
     """
     Receives the current primitive and uov data file paths. <br>
-    :param path: The path to the directory containing the prim and uov files.
+    :param path: The path to the directory containing the prim and uov files. <br>
+    :return: A tuple of lists, the first being the sorted prim files and the other being the sorted uov files.
     """
     prim = []
     uov = []
@@ -170,8 +171,8 @@ def find_max_min_inner(path: str, ext: str = 'png') -> None:
     print(f'Fcn *find_max_min_inner* completed in {time.time()-t0}s')
 
 
-
 if __name__ == '__main__':
+    # Argument parsing for command-line usage
     parser = argparse.ArgumentParser(prog='2D Profile Plot Animator Athena++',
                                     description='Animates 2D profiles from Athena++ magnetar wind simulations.')
     parser.add_argument('-c', '-create', action='store_true', default=False,
