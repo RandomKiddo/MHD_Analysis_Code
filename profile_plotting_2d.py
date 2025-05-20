@@ -172,48 +172,51 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     ax.contour(thetar, rr, frac[::-1], [1+tol], colors='orange')
 
     # Interpolate magnetic field data to make streamplots of magnetic field lines
-    thetaf = df['x2f']
-    theta = df['x2v']
-    rf = df['x1f']
-    r = df['x1v']
+    thetaf = df['x2f']  # face centers theta
+    theta = df['x2v']  # cell centers theta
+    rf = df['x1f']  # face centers radius
+    r = df['x1v']  # cell centers radius
+
     mask = (r >= r_min) & (r <= r_max)
-    r = r[mask]
-    st_nth=32
-    st_nr=32
-    st_pts = np.linspace(thetaf[1], thetaf[-2], st_nth)
+    r = r[mask]  # Apply mask
+
+    n_theta_seeds = 50
+    n_r_seeds = 50
+    theta_seed_vals = np.linspace(thetaf[1], thetaf[-2], n_theta_seeds)
 
     r0 = r[0]
-    index = r.shape[0]-2
-    st_pts = np.array([st_pts, [r0] * st_nr]).T
-    st_pts2 = np.linspace(-thetaf[-2],-thetaf[1], st_nth)
-    st_pts2 = np.array([st_pts2, [r0] * st_nr]).T
+    stream_seeds_upper = np.array([theta_seed_vals, [r0] * n_r_seeds]).T
+    theta_seed_vals_mirrored = np.linspace(-thetaf[-2], -thetaf[1], n_theta_seeds)
+    stream_seeds_lower = np.array([theta_seed_vals_mirrored, [r0] * n_r_seeds]).T
+    
     interp_nth = len(theta)*2
-    thetab = np.linspace(theta[0], theta[-1], interp_nth)
-    theta2b = np.linspace(-theta[-1],-theta[0], interp_nth)
+    theta_interp = np.linspace(theta[0], theta[-1], interp_nth)
+    theta_interp_mirrored = np.linspace(-theta[-1],-theta[0], interp_nth)
 
     dr = rf[1] - rf[0]
-    interp_nr = int(np.ceil((obound - r0)/dr))
-    rb = np.linspace(r[0], obound, int(interp_nr))
+    interp_n_r = int(np.ceil((obound - r0)/dr))
+    r_interp = np.linspace(r[0], obound, int(interp_n_r))
     
     # SciPy interp2d was initially used. Due to deprecation, RectBivariateSpline is used to interpolate instead.
+    # https://docs.scipy.org/doc/scipy/tutorial/interpolate/interp_transition_guide.html#interp-transition-guide
     rbs = RectBivariateSpline(r, theta, Br[:, mask].T)
-    B1 = rbs(rb, thetab)
+    B1 = rbs(r_interp, theta_interp)
     rbs = RectBivariateSpline(r, theta, Btheta[:, mask].T)
-    B2 = rbs(rb, thetab)
+    B2 = rbs(r_interp, theta_interp)
 
     # Mirror data from RectBivariateSpline
     B1_flipped = np.zeros_like(B1)
-    for i in range(len(rb)):
+    for i in range(len(r_interp)):
         B1_flipped[i, :] = B1[i, ::-1]  
     B2_flipped = np.zeros_like(B2)
-    for i in range(len(rb)):
+    for i in range(len(r_interp)):
         B2_flipped[i, :] = -B2[i, ::-1] 
 
     # Streamplots for the magnetic field lines
-    s1 = ax.streamplot(thetab, rb, B2 / rb[:, None], B1, density=density, linewidth=0.5, color='white',
-                    start_points=st_pts, arrowsize=0.5, broken_streamlines=False)
-    s2 = ax.streamplot(theta2b, rb, B2_flipped / rb[:, None], B1_flipped, density=density, linewidth=0.5, color='white',
-                    start_points=st_pts2, arrowsize=0.5, broken_streamlines=False)
+    s1 = ax.streamplot(theta_interp, r_interp, B2 / r_interp[:, None], B1, density=density, linewidth=0.5, color='white',
+                    start_points=stream_seeds_upper, arrowsize=0.5, broken_streamlines=False)
+    s2 = ax.streamplot(theta_interp_mirrored, r_interp, B2_flipped / r_interp[:, None], B1_flipped, density=density, linewidth=0.5, color='white',
+                    start_points=stream_seeds_lower, arrowsize=0.5, broken_streamlines=False)
 
     # Offset axes
     ax.set_theta_offset(0.5*np.pi)
