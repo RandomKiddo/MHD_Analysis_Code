@@ -34,7 +34,8 @@ def animate(path: str, output_path: str, ext: str = 'png') -> None:
 def receive(path: str) -> Tuple[List, List]:
     """
     Receives the current primitive and uov data file paths. <br>
-    :param path: The path to the directory containing the prim and uov files.
+    :param path: The path to the directory containing the prim and uov files. <br>
+    :return: A tuple of lists, the first being the sorted prim files and the other being the sorted uov files.
     """
     prim = []
     uov = []
@@ -54,7 +55,7 @@ def receive(path: str) -> Tuple[List, List]:
 
 def create(path: str, output_dir: str, ext: str = 'png', vr_range: tuple = None, vphi_range: tuple = None, density: float = 15, 
            obound: float = None, tol: float = 1e15, 
-           title: str = r'$P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}$') -> None:
+           title: str = r'P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}') -> None:
     """
     Creates a directory of 2D profile images. <br>
     :param path: Path to the directory containing the prim and uov files. <br>
@@ -172,6 +173,7 @@ def find_max_min_inner(path: str, ext: str = 'png') -> None:
 
 
 if __name__ == '__main__':
+    # Argument parsing for command-line usage
     parser = argparse.ArgumentParser(prog='2D Profile Plot Animator Athena++',
                                     description='Animates 2D profiles from Athena++ magnetar wind simulations.')
     parser.add_argument('-c', '-create', action='store_true', default=False,
@@ -201,7 +203,7 @@ if __name__ == '__main__':
                         help='The fast magnetosonic tolerance to use when plotting. Defaults to 1e-15.')
     parser.add_argument('-fi', '-findinner', action='store_true', default=False,
                         help='Find the minimum and maximum v_r and v_phi values across the inner boundary area. Defaults to False. Overrides other flags.')
-    parser.add_argument('-t', '-title', type=str, action='store', default=r'$P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}$',
+    parser.add_argument('-t', '-title', type=str, action='store', default=r'P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}',
                         help='The title to use for the animation plot. Defaults to a LaTeX-set rotating magnetar of set luminosity title.')
 
     args = parser.parse_args()
