@@ -10,12 +10,15 @@ import cmasher as cmr
 import math
 import os
 import scipy.ndimage
+import warnings
 
 from scipy.interpolate import RectBivariateSpline
+from typing import *
 
 def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, density: float = 15,
         vr_range: tuple = None, vphi_range: tuple = None, tol: float = 1e-15,
-        title: str = r'$P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}$') -> None:
+        title: str = r'P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}',
+        iso: bool = False, cT: float = 5e9, calculate_iso_quantities: bool = False, star_constants: dict = {}) -> None:
     """
     Plots the 1D profiles using the Athena++ simulation dataframe files. <br>
     :param prim_file: The string path to the prim athdf file to use. <br>
@@ -26,7 +29,11 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     :param vr_range: R-velocity bar range to use. Defaults to None (meaning matplotlib decides). <br>
     :param vphi_range: Phi-velocity bar range to use. Defaults to None (meaning matplotlib decides). <br>
     :param tol: The fast magnetosonic surface tolerance to use when making the contour line. Defaults to 1e-15. <br>
-    :param title: The title to use for the plot. Defaults to a LaTeX-set rotating magnetar of set luminosity title.
+    :param title: The title to use for the plot. Defaults to a LaTeX-set rotating magnetar of set luminosity title. <br>
+    :param iso: If the simulation is isothermal. Defaults to False. <br>
+    :param cT: The isothermal sound speed, only used if iso is True. Defaults to 5e9 cm/s. <br>
+    :param calculate_iso_quantities: If isothermal zeta quantities should be calculated and outputted. Defaults to False. <br>
+    :param star_constants: Star constants dict to use in calculating iso quantities, with keys M*, R*, B*, Omega*, and rho*. Defaults to {}. 
     """
 
     # Read the Athena data frames
@@ -46,11 +53,23 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     r_min = np.min(df['x1v'][:])
     r_max = np.max(df['x1v'][:])
 
+    # Set r_max outer boundary
+    if obound is not None:
+        r_max = obound
+        if r_max < r_min:
+            r_min = 0
+    else:
+        obound = r_max
+
     # Create legends for the surface contour lines
     # We make this first so it gets covered up later
+    if not iso:
+        sonic_surface_name = 'Adiabatic Sonic Surface'
+    else:
+        sonic_surface_name = 'Sonic Surface'
     legend_elements = [plt.Line2D([0], [0], color=c, label=f'{l}') for c, l in zip(
         ['red', '#1f77b4', 'orange'], 
-        ['Adiabatic Sonic Surface', 'Alfvén Surface', 'Fast Magnetosonic Surface']
+        [sonic_surface_name, 'Alfvén Surface', 'Fast Magnetosonic Surface']
     )]
     ax.legend(handles=legend_elements, loc='center', bbox_to_anchor=(0.5, -0.1))
 
@@ -63,8 +82,10 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     theta = df['x2v']
     rf = df['x1f']
     r = df['x1v']
+    mask = (r >= r_min) & (r <= r_max)
     
     r_true = df['x1v']
+    r_true = r_true[mask]
     theta_true = df['x2v']
 
     # Prepare r-velocity data
@@ -72,6 +93,7 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     theta = np.linspace(thetaf[0], thetaf[-1], theta_true.shape[0])
     r, theta = np.meshgrid(r, theta)
     vr = df['vel1'][0]/10e9
+    vr = vr[:, mask]
 
     # R-Velocity colormesh profiles
     if vr_range is None:
@@ -84,6 +106,7 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     theta = np.linspace(-thetaf[-1], -thetaf[0], theta_true.shape[0])
     r, theta = np.meshgrid(r, theta)
     vphi = df['vel3'][0]/10e9
+    vphi = vphi[:, mask]
     vphi_max = np.max(vphi)
     vphi_min = -vphi_max
 
@@ -124,20 +147,26 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     thetar = np.linspace(-thetaf[-1], -thetaf[0], theta_true.shape[0])
     rr, thetar = np.meshgrid(rr, thetar)
 
-    # Adiabatic Sonic Surface
-    frac = np.divide(cs, v_poloidal)
-    frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0) 
-    ax.contour(thetal, rl, frac, [1], colors='red')
-    ax.contour(thetar, rr, frac[::-1], [1], colors='red')
+    # Adiabatic Sonic Surface / General Sonic Surface
+    if not iso:
+        frac = np.divide(cs[:, mask], v_poloidal[:, mask])
+        frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0)
+        ax.contour(thetal, rl, frac, [1], colors='red')
+        ax.contour(thetar, rr, frac[::-1], [1], colors='red')
+    else:
+        frac = np.divide(df['vel1'][0][:, mask], cT)
+        frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0)
+        ax.contour(thetal, rl, frac, [1], colors='red')
+        ax.contour(thetar, rr, frac[::-1], [1], colors='red')
 
     # Alfvén Surface
-    frac = np.divide(v_alfven, v_poloidal)
+    frac = np.divide(v_alfven[:, mask], v_poloidal[:, mask])
     frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0)
     ax.contour(thetal, rl, frac, [1], colors='#1f77b4')
     ax.contour(thetar, rr, frac[::-1], [1], colors='#1f77b4')
 
     # Fast Magnetosonic Surface
-    frac = np.divide(v_fast_magnetosonic, v_poloidal)
+    frac = np.divide(v_fast_magnetosonic[:, mask], v_poloidal[:, mask])
     frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0) 
     ax.contour(thetal, rl, frac, [1+tol], colors='orange') # tol=1e-15
     ax.contour(thetar, rr, frac[::-1], [1+tol], colors='orange')
@@ -147,6 +176,8 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     theta = df['x2v']
     rf = df['x1f']
     r = df['x1v']
+    mask = (r >= r_min) & (r <= r_max)
+    r = r[mask]
     st_nth=32
     st_nr=32
     st_pts = np.linspace(thetaf[1], thetaf[-2], st_nth)
@@ -159,14 +190,15 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     interp_nth = len(theta)*2
     thetab = np.linspace(theta[0], theta[-1], interp_nth)
     theta2b = np.linspace(-theta[-1],-theta[0], interp_nth)
-    interp_nr = int(np.ceil(rf[index+2] / (rf[1] - rf[0])))
 
-    rb = np.linspace(r[0], rf[index+2], int(interp_nr/10.0))
+    dr = rf[1] - rf[0]
+    interp_nr = int(np.ceil((obound - r0)/dr))
+    rb = np.linspace(r[0], obound, int(interp_nr))
     
     # SciPy interp2d was initially used. Due to deprecation, RectBivariateSpline is used to interpolate instead.
-    rbs = RectBivariateSpline(r, theta, Br.T)
+    rbs = RectBivariateSpline(r, theta, Br[:, mask].T)
     B1 = rbs(rb, thetab)
-    rbs = RectBivariateSpline(r, theta, Btheta.T)
+    rbs = RectBivariateSpline(r, theta, Btheta[:, mask].T)
     B2 = rbs(rb, thetab)
 
     # Mirror data from RectBivariateSpline
@@ -183,15 +215,11 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     s2 = ax.streamplot(theta2b, rb, B2_flipped / rb[:, None], B1_flipped, density=density, linewidth=0.5, color='white',
                     start_points=st_pts2, arrowsize=0.5, broken_streamlines=False)
 
-    # Set outer boundary if exits
-    if obound is not None:
-        r_max = obound
-        if r_max < r_min:
-            r_min = 0
-    ax.set_ylim([r_min, r_max])
-
     # Offset axes
     ax.set_theta_offset(0.5*np.pi)
+
+    # Set the actual outer boundary limits
+    ax.set_ylim([r_min, r_max])
 
     # Remove grid
     ax.grid(False)
@@ -200,6 +228,19 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
 
     # Set title
     ax.set_title(f'${title}$')  # For use with LaTeX
+
+    # Calculate iso quantites
+    if iso and calculate_iso_quantities:
+        if len([_ for _ in ('M*', 'R*', 'B*', 'Omega*', 'rho*') if _ not in star_constants]) > 0:
+            warnings.warn('Isothermal and calculating iso quantities enabled, but star constants missing key quantities.')
+        else:
+            M, R, B, Omega, rho = star_constants['M*'], star_constants['R*'], star_constants['B*'], star_constants['Omega*'], star_constants['rho*']
+            G = 6.6743e-8
+            zeta_B = np.sqrt(((B**2)*R)/(8*np.pi*G*M*rho))
+            zeta_Omega = np.sqrt(((Omega**2)*(R**3))/(2*G*M))
+            zeta_T = np.sqrt(((cT**2)*R)/(2*G*M))
+            print('Zeta Values:')
+            print(f'zeta_B: {zeta_B} | zeta_Omega: {zeta_Omega} | zeta_T: {zeta_T}')
 
     plt.gca().set_aspect('equal')
     plt.tight_layout()
@@ -235,8 +276,24 @@ if __name__ == '__main__':
                         help='The phi-velocity maximum to use in the colorbar. Defaults to None.')
     parser.add_argument('-tol', action='store', type=float, default=1e-15,
                         help='The fast magnetosonic tolerance to use when plotting. Defaults to 1e-15.')
-    parser.add_argument('-t', '-title', type=str, action='store', default=r'$P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}$',
-                        help='The title to use for the animation plot. Defaults to a LaTeX-set rotating magnetar of set luminosity title.')
+    parser.add_argument('-t', '-title', type=str, action='store', default=r'P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}',
+                        help='The title to use for the plot. Defaults to a LaTeX-set rotating magnetar of set luminosity title.')
+    parser.add_argument('-iso', action='store_true',
+                        help='If the simulation is isothermal so P=rho*cT^2.')
+    parser.add_argument('-cT', type=float, action='store', default=5e9,
+                        help='The isothermal sound speed, if required, in cm/s. Defaults to 5e9 cm/s.')
+    parser.add_argument('-ciq', action='store_true',
+                        help='If isothermal zeta quantities should be calculated and outputted. Defaults to False.')
+    parser.add_argument('-Bst', type=float, action='store', default=3e15,
+                        help='B* value for isothermal zeta quantity. Defaults to 3e15 G.')
+    parser.add_argument('-Mst', type=float, action='store', default=1.4*1.9885e33,
+                        help='M* value for isothermal zeta quantity. Defaults to 1.4 Msun in g.')
+    parser.add_argument('-rhost', type=float, action='store', default=4e11,
+                        help='rho* value for isothermal zeta quantity. Defaults to 4e11 g/cm^3.')
+    parser.add_argument('-Omegast', type=float, action='store', default=300/1000,
+                        help='Omega* value for isothermal zeta quantity. Defaults to 0.3 s (300 ms).')
+    parser.add_argument('-Rst', type=float, action='store', default=1.2e6,
+                        help='R* value for isothermal zeta quantity. Defaults to 1.2e6 cm.')
 
     args = parser.parse_args()
 
@@ -254,7 +311,13 @@ if __name__ == '__main__':
         vphi_range.append(args.vphimin)
         vphi_range.append(args.vphimax)
         vphi_range = tuple(vphi_range)
+    
+    constants = {
+        'B*': args.Bst, 'M*': args.Mst, 'rho*': args.rhost,
+        'Omega*': args.Omegast, 'R*': args.Rst
+    }
 
     plot(prim_file=args.prim, uov_file=args.uov, output_path=args.s, obound=args.ob, density=args.d,
-         vr_range=vr_range, vphi_range=vphi_range, tol=args.tol, title=args.t)
+         vr_range=vr_range, vphi_range=vphi_range, tol=args.tol, title=args.t, iso=args.iso, cT=args.cT,
+         calculate_iso_quantities=args.ciq, star_constants=constants)
 
