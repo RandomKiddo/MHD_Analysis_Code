@@ -55,7 +55,8 @@ def receive(path: str) -> Tuple[List, List]:
 
 def create(path: str, output_dir: str, ext: str = 'png', vr_range: tuple = None, vphi_range: tuple = None, density: float = 15, 
            obound: float = None, tol: float = 1e15, 
-           title: str = r'P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}') -> None:
+           title: str = r'P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}',
+           iso: bool = False, cT: float = 5e9, smooth_surfaces: bool = False) -> None:
     """
     Creates a directory of 2D profile images. <br>
     :param path: Path to the directory containing the prim and uov files. <br>
@@ -66,7 +67,9 @@ def create(path: str, output_dir: str, ext: str = 'png', vr_range: tuple = None,
     :param density: The density of vector field lines to use in the streamplot. <br>
     :param obound: The outer boundary to use when plotting. <br>
     :param tol: The fast magnetosonic surface tolerance to use when making the contour line. Defaults to 1e-15. <br>
-    :param title: The title to use for the plot. Defaults to a LaTeX-set rotating magnetar of set luminosity title.
+    :param title: The title to use for the plot. Defaults to a LaTeX-set rotating magnetar of set luminosity title. <br>
+    :param iso: If the simulation is isothermal. Defaults to False. <br>
+    :param cT: The isothermal sound speed, only used if iso is True. Defaults to 5e9 cm/s.
     """
     t0 = time.time()
 
@@ -77,7 +80,7 @@ def create(path: str, output_dir: str, ext: str = 'png', vr_range: tuple = None,
     
     for _, (pfp, ufp) in enumerate(tqdm(zip(prim, uov), total=len(prim))):
         prf.plot(prim_file=pfp, uov_file=ufp, output_path=os.path.join(output_dir, f'{_:05d}.{ext}'), vr_range=vr_range, 
-                vphi_range=vphi_range, density=density, obound=obound, tol=tol, title=title)
+                vphi_range=vphi_range, density=density, obound=obound, tol=tol, title=title, iso=iso, cT=cT, smooth_surfaces=smooth_surfaces)
     
     print(f'Fcn *create* completed in {time.time()-t0}s')
 
@@ -205,6 +208,12 @@ if __name__ == '__main__':
                         help='Find the minimum and maximum v_r and v_phi values across the inner boundary area. Defaults to False. Overrides other flags.')
     parser.add_argument('-t', '-title', type=str, action='store', default=r'P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}',
                         help='The title to use for the animation plot. Defaults to a LaTeX-set rotating magnetar of set luminosity title.')
+    parser.add_argument('-iso', action='store_true',
+                        help='If the simulation is isothermal so P=rho*cT^2.')
+    parser.add_argument('-cT', type=float, action='store', default=5e9,
+                        help='The isothermal sound speed, if required, in cm/s. Defaults to 5e9 cm/s.')
+    parser.add_argument('-sm', '-smooth', action='store_true',
+                        help='If Gaussian smoothing should be applied to surface plots. Defaults to False.')
 
     args = parser.parse_args()
 
@@ -230,6 +239,6 @@ if __name__ == '__main__':
     else:
         if args.c:
             create(path=args.p, output_dir=args.o, ext=args.ext, vr_range=vr_range, vphi_range=vphi_range, density=args.d, 
-                   obound=args.ob, tol=args.tol, title=args.t)
+                   obound=args.ob, tol=args.tol, title=args.t, iso=args.iso, cT=args.cT, smooth_surfaces=args.sm)
         animate(path=args.o, output_path=args.oi, ext=args.ext)
 

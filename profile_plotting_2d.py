@@ -18,7 +18,8 @@ from typing import *
 def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, density: float = 15,
         vr_range: tuple = None, vphi_range: tuple = None, tol: float = 1e-15,
         title: str = r'P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}',
-        iso: bool = False, cT: float = 5e9, calculate_iso_quantities: bool = False, star_constants: dict = {}) -> None:
+        iso: bool = False, cT: float = 5e9, calculate_iso_quantities: bool = False, star_constants: dict = {},
+        smooth_surfaces: bool = False) -> None:
     """
     Plots the 1D profiles using the Athena++ simulation dataframe files. <br>
     :param prim_file: The string path to the prim athdf file to use. <br>
@@ -33,7 +34,8 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     :param iso: If the simulation is isothermal. Defaults to False. <br>
     :param cT: The isothermal sound speed, only used if iso is True. Defaults to 5e9 cm/s. <br>
     :param calculate_iso_quantities: If isothermal zeta quantities should be calculated and outputted. Defaults to False. <br>
-    :param star_constants: Star constants dict to use in calculating iso quantities, with keys M*, R*, B*, Omega*, and rho*. Defaults to {}. 
+    :param star_constants: Star constants dict to use in calculating iso quantities, with keys M*, R*, B*, Omega*, and rho*. Defaults to {}. <br>
+    :param smooth_surfaces: If Gaussian smoothing should be applied to plot the surfaces. Defaults to False.
     """
 
     # Read the Athena data frames
@@ -92,7 +94,7 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     r = np.linspace(r_min, r_max, r_true.shape[0])
     theta = np.linspace(thetaf[0], thetaf[-1], theta_true.shape[0])
     r, theta = np.meshgrid(r, theta)
-    vr = df['vel1'][0]/10e9
+    vr = df['vel1'][0]/1e9
     vr = vr[:, mask]
 
     # R-Velocity colormesh profiles
@@ -105,7 +107,7 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     r = np.linspace(r_min, r_max, r_true.shape[0])
     theta = np.linspace(-thetaf[-1], -thetaf[0], theta_true.shape[0])
     r, theta = np.meshgrid(r, theta)
-    vphi = df['vel3'][0]/10e9
+    vphi = df['vel3'][0]/1e9
     vphi = vphi[:, mask]
     vphi_max = np.max(vphi)
     vphi_min = -vphi_max
@@ -123,54 +125,6 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     else:
         cbar = plt.colorbar(res2, ax=ax, label=r'$v_{\phi}\ \left[10^9\ {\rm cm}\ {\rm s}^{-1}\right]$', location='right', fraction=0.05)
 
-    # Calculate different wind speeds
-    cs = df_uov['dt3'][0]/10e9
-    v_poloidal = np.sqrt(np.power(df['vel1'][0]/10e9, 2)+np.power(df['vel2'][0]/10e9, 2))
-    mag_B = np.sqrt(np.power(Br, 2)+np.power(Btheta, 2)+np.power(Bphi, 2))
-    cos_theta = np.divide(Br, mag_B)
-    v_alfven = np.sqrt(
-        np.divide(np.power(Br, 2)+np.power(Btheta, 2), 4*math.pi*df['rho'][0])
-    )/10e9
-    outside = np.power(v_poloidal, 2)+np.power(cs, 2)
-    inside = np.sqrt(
-        np.power(outside, 2)-(4*np.multiply(np.power(v_poloidal, 2), np.power(cs, 2))) # assume radial propagation
-    )
-    v_fast_magnetosonic_sq = 0.5*(outside + inside)
-    v_fast_magnetosonic = np.sqrt(v_fast_magnetosonic_sq)
-
-    # To plot the surfaces, we need to split the linspace into left and right portions due to data setup
-    rl = np.linspace(r_min, r_max, r_true.shape[0])
-    thetal = np.linspace(thetaf[0], thetaf[-1], theta_true.shape[0])
-    rl, thetal = np.meshgrid(rl, thetal)
-
-    rr = np.linspace(r_min, r_max, r_true.shape[0])
-    thetar = np.linspace(-thetaf[-1], -thetaf[0], theta_true.shape[0])
-    rr, thetar = np.meshgrid(rr, thetar)
-
-    # Adiabatic Sonic Surface / General Sonic Surface
-    if not iso:
-        frac = np.divide(cs[:, mask], v_poloidal[:, mask])
-        frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0)
-        ax.contour(thetal, rl, frac, [1], colors='red')
-        ax.contour(thetar, rr, frac[::-1], [1], colors='red')
-    else:
-        frac = np.divide(df['vel1'][0][:, mask], cT)
-        frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0)
-        ax.contour(thetal, rl, frac, [1], colors='red')
-        ax.contour(thetar, rr, frac[::-1], [1], colors='red')
-
-    # Alfvén Surface
-    frac = np.divide(v_alfven[:, mask], v_poloidal[:, mask])
-    frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0)
-    ax.contour(thetal, rl, frac, [1], colors='#1f77b4')
-    ax.contour(thetar, rr, frac[::-1], [1], colors='#1f77b4')
-
-    # Fast Magnetosonic Surface
-    frac = np.divide(v_fast_magnetosonic[:, mask], v_poloidal[:, mask])
-    frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0) 
-    ax.contour(thetal, rl, frac, [1+tol], colors='orange') # tol=1e-15
-    ax.contour(thetar, rr, frac[::-1], [1+tol], colors='orange')
-
     # Interpolate magnetic field data to make streamplots of magnetic field lines
     thetaf = df['x2f']  # face centers theta
     theta = df['x2v']  # cell centers theta
@@ -180,8 +134,8 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     mask = (r >= r_min) & (r <= r_max)
     r = r[mask]  # Apply mask
 
-    n_theta_seeds = 50
-    n_r_seeds = 50
+    n_theta_seeds = 32
+    n_r_seeds = 32
     theta_seed_vals = np.linspace(thetaf[1], thetaf[-2], n_theta_seeds)
 
     r0 = r[0]
@@ -218,11 +172,60 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     s2 = ax.streamplot(theta_interp_mirrored, r_interp, B2_flipped / r_interp[:, None], B1_flipped, density=density, linewidth=0.5, color='white',
                     start_points=stream_seeds_lower, arrowsize=0.5, broken_streamlines=False)
 
+    # Calculate different wind speeds
+    cs = df_uov['dt3'][0]
+    v_poloidal = np.sqrt(((df['vel1'][0]**2)+(df['vel2'][0]**2)))
+    v_alfven = np.sqrt(((Br**2)+(Btheta**2))/(4*np.pi*df['rho'][0]))
+    mag_B = np.sqrt((Br**2)+(Btheta**2)+(Bphi**2))
+    cos_theta = Br/mag_B
+    v_fast_magnetosonic_sq = 0.5*(
+        (v_alfven**2)+(cs**2)+np.sqrt(
+            ((v_alfven**2)+(cs**2))**2 + 4*(v_alfven**2)*(cs**2)*(cos_theta**2)
+        )
+    )
+    v_fast_magnetosonic = np.sqrt(v_fast_magnetosonic_sq)
+
+    # Full plot range for contour plotting
+    theta_full = np.concatenate([-theta_true[::-1], theta_true])
+    r_full = r_true
+    theta_grid, r_grid = np.meshgrid(theta_full, r_full, indexing='ij')
+
+    # Adiabatic Sonic Surface / General Sonic Surface
+    if not iso:
+        frac = cs[:, mask]/v_poloidal[:, mask]
+        if smooth_surfaces:
+            frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0)
+        frac_full = np.concatenate([frac[::-1, :], frac], axis=0)
+        ax.contour(theta_grid, r_grid, frac_full, [1], colors='red', linewidths=1)
+    else:
+        frac = df['vel1'][0][:, mask]/cT
+        if smooth_surfaces:
+            frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0)
+        frac_full = np.concatenate([frac[::-1, :], frac], axis=0)
+        ax.contour(theta_grid, r_grid, frac_full, [1], colors='red', linewidths=1)
+
+    # Alfvén Surface
+    frac = v_alfven[:, mask]/v_poloidal[:, mask]
+    if smooth_surfaces:
+        frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0)
+    frac_full = np.concatenate([frac[::-1, :], frac], axis=0)
+    ax.contour(theta_grid, r_grid, frac_full, [1], colors='#1f77b4', linewidths=1)
+
+    # Fast Magnetosonic Surface
+    frac = v_fast_magnetosonic[:, mask]/v_poloidal[:, mask]
+    if smooth_surfaces:
+        frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0) 
+    frac_full = np.concatenate([frac[::-1, :], frac], axis=0)
+    ax.contour(theta_grid, r_grid, frac_full, [1], colors='orange', linewidths=1)
+    #ax.contour(thetal, rl, frac, [1+tol], colors='orange', linewidths=1) # tol=1e-15
+    #ax.contour(thetar, rr, frac[::-1], [1+tol], colors='orange', linewidths=1)
+
     # Offset axes
     ax.set_theta_offset(0.5*np.pi)
 
     # Set the actual outer boundary limits
     ax.set_ylim([r_min, r_max])
+    ax.set_yscale('linear')
 
     # Remove grid
     ax.grid(False)
@@ -297,6 +300,8 @@ if __name__ == '__main__':
                         help='Omega* value for isothermal zeta quantity. Defaults to 0.3 s (300 ms).')
     parser.add_argument('-Rst', type=float, action='store', default=1.2e6,
                         help='R* value for isothermal zeta quantity. Defaults to 1.2e6 cm.')
+    parser.add_argument('-sm', '-smooth', action='store_true',
+                        help='If Gaussian smoothing should be applied to surface plots. Defaults to False.')
 
     args = parser.parse_args()
 
@@ -322,5 +327,5 @@ if __name__ == '__main__':
 
     plot(prim_file=args.prim, uov_file=args.uov, output_path=args.s, obound=args.ob, density=args.d,
          vr_range=vr_range, vphi_range=vphi_range, tol=args.tol, title=args.t, iso=args.iso, cT=args.cT,
-         calculate_iso_quantities=args.ciq, star_constants=constants)
+         calculate_iso_quantities=args.ciq, star_constants=constants, smooth_surfaces=args.sm)
 
