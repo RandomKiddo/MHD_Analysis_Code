@@ -15,13 +15,14 @@ import warnings
 from scipy.interpolate import RectBivariateSpline
 from typing import *
 
-_sentinel = r'P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}'
+_sentinel = object()
+_default_title = r'P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}'
 
 def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, density: float = 15,
         vr_range: tuple = None, vphi_range: tuple = None, tol: float = 1e-15,
-        title: str = _sentinel,
+        title: object = _sentinel,
         iso: bool = False, cT: float = 5e9, calculate_iso_quantities: bool = False, star_constants: dict = {},
-        smooth_surfaces: bool = False, scale_bar_length: float = 50) -> None:
+        smooth_surfaces: bool = False) -> None:
     """
     Plots the 1D profiles using the Athena++ simulation dataframe files. <br>
     :param prim_file: The string path to the prim athdf file to use. <br>
@@ -37,8 +38,7 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     :param cT: The isothermal sound speed, only used if iso is True. Defaults to 5e9 cm/s. <br>
     :param calculate_iso_quantities: If isothermal xi quantities should be calculated and outputted. Defaults to False. <br>
     :param star_constants: Star constants dict to use in calculating iso quantities, with keys M*, R*, B*, Omega*, and rho*. Defaults to {}. <br>
-    :param smooth_surfaces: If Gaussian smoothing should be applied to plot the surfaces. Defaults to False. <br>
-    :param scale_bar_length: The radius to use for the scale bar in km. Defaults to 50 km. 
+    :param smooth_surfaces: If Gaussian smoothing should be applied to plot the surfaces. Defaults to False.
     """
 
     # Read the Athena data frames
@@ -244,15 +244,26 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
         else:
             M, R, B, Omega, rho = star_constants['M*'], star_constants['R*'], star_constants['B*'], star_constants['Omega*'], star_constants['rho*']
             G = 6.6743e-8
+
             xi_B = np.sqrt(((B**2)*R)/(8*np.pi*G*M*rho))
             xi_Omega = np.sqrt(((Omega**2)*(R**3))/(2*G*M))
             xi_T = np.sqrt(((cT**2)*R)/(2*G*M))
+
             if title and title is not _sentinel:
                 warnings.warn('Title given, but isothermal quantities are being calculated. The iso quantities will replace the title.')
+            
             xi_B = round(xi_B, 3)
-            xi_Omega = round(xi_Omega, 3)
             xi_T = round(xi_T, 3)
-            title = fr'\xi_B={xi_B},\ \xi_\Omega={xi_Omega},\ \xi_T={xi_T}'
+
+            exponent = int(math.floor(math.log10(abs(xi_Omega))))
+            significand = xi_Omega / (10**exponent)
+            significand_str = f'{significand:.2f}'
+
+            title = fr'\xi_B={xi_B:.2f},\ \xi_\Omega={significand_str}\times 10^{{{exponent}}},\ \xi_T={xi_T:.2f}'
+
+    # Check for default title
+    if title is _sentinel and not iso and not calculate_iso_quantities:
+        title = _default_title
 
     # Set title
     ax.set_title(f'${title}$')  # For use with LaTeX
@@ -300,7 +311,7 @@ if __name__ == '__main__':
     parser.add_argument('-cT', type=float, action='store', default=5e9,
                         help='The isothermal sound speed, if required, in cm/s. Defaults to 5e9 cm/s.')
     parser.add_argument('-ciq', action='store_true',
-                        help='If isothermal zeta quantities should be calculated and outputted. Defaults to False.')
+                        help='If isothermal xi quantities should be calculated and outputted. Defaults to False.')
     parser.add_argument('-Bst', type=float, action='store', default=3e15,
                         help='B* value for isothermal zeta quantity. Defaults to 3e15 G.')
     parser.add_argument('-Mst', type=float, action='store', default=1.4*1.9885e33,
