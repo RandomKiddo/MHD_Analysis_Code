@@ -14,6 +14,7 @@ import warnings
 
 from scipy.interpolate import RectBivariateSpline
 from typing import *
+from cmcrameri import cm as cm_cvd
 
 _sentinel = object()
 _default_title = r'P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}'
@@ -66,6 +67,11 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     else:
         obound = r_max
 
+    # Set colors (for ease of changing and use later)
+    sonic_surface_color = '#cc3311'
+    alfven_surface_color = '#0077bb'
+    magnetosonic_surface_color = '#ee7733'
+
     # Create legends for the surface contour lines
     # We make this first so it gets covered up later
     if not iso:
@@ -73,8 +79,8 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     else:
         sonic_surface_name = 'Mach Surface'
     legend_elements = [plt.Line2D([0], [0], color=c, label=f'{l}') for c, l in zip(
-        ['red', '#1f77b4', 'orange'], 
-        [sonic_surface_name, 'Alfvén Surface', 'Fast Magnetosonic Surface']
+        [sonic_surface_color, alfven_surface_color, magnetosonic_surface_color], 
+        [sonic_surface_name, 'Alfvén Surface', 'Fast Magnetosonic Surface'],
     )]
     ax.legend(handles=legend_elements, loc='center', bbox_to_anchor=(0.5, -0.1))
 
@@ -117,9 +123,9 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
 
     # Phi-Velocity colormesh profiles
     if vphi_range is None:
-        res2 = ax.pcolormesh(theta, r, vphi, cmap=cmr.wildfire_r, shading='gouraud', vmin=vphi_min, vmax=vphi_max)
+        res2 = ax.pcolormesh(theta, r, vphi, cmap=cmr.iceburn, shading='gouraud', vmin=vphi_min, vmax=vphi_max)
     else:
-        res2 = ax.pcolormesh(theta, r, vphi, cmap=cmr.wildfire_r, shading='gouraud', vmin=vphi_range[0], vmax=vphi_range[1])
+        res2 = ax.pcolormesh(theta, r, vphi, cmap=cmr.iceburn, shading='gouraud', vmin=vphi_range[0], vmax=vphi_range[1])
 
     # Colorbars for the colormesh profiles
     cbar = plt.colorbar(res1, ax=ax, label=r'$v_r\ \left[10^9\ {\rm cm}\ {\rm s}^{-1}\right]$', location='left', fraction=0.05, extend='max')
@@ -203,27 +209,27 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
         if smooth_surfaces:
             frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0)
         frac_full = np.concatenate([frac[::-1, :], frac], axis=0)
-        ax.contour(theta_grid, r_grid, frac_full, [1], colors='red', linewidths=1)
+        ax.contour(theta_grid, r_grid, frac_full, [1], colors=sonic_surface_color, linewidths=1)
     else:
         frac = df['vel1'][0][:, mask]/cT
         if smooth_surfaces:
             frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0)
         frac_full = np.concatenate([frac[::-1, :], frac], axis=0)
-        ax.contour(theta_grid, r_grid, frac_full, [1], colors='red', linewidths=1)
+        ax.contour(theta_grid, r_grid, frac_full, [1], colors=sonic_surface_color, linewidths=1)
 
     # Alfvén Surface
     frac = v_alfven[:, mask]/v_poloidal[:, mask]
     if smooth_surfaces:
         frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0)
     frac_full = np.concatenate([frac[::-1, :], frac], axis=0)
-    ax.contour(theta_grid, r_grid, frac_full, [1], colors='#1f77b4', linewidths=1)
+    ax.contour(theta_grid, r_grid, frac_full, [1], colors=alfven_surface_color, linewidths=1)
 
     # Fast Magnetosonic Surface
     frac = v_fast_magnetosonic[:, mask]/v_poloidal[:, mask]
     if smooth_surfaces:
         frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0) 
     frac_full = np.concatenate([frac[::-1, :], frac], axis=0)
-    ax.contour(theta_grid, r_grid, frac_full, [1], colors='orange', linewidths=1)
+    ax.contour(theta_grid, r_grid, frac_full, [1], colors=magnetosonic_surface_color, linewidths=1)
 
     # Offset axes
     ax.set_theta_offset(0.5*np.pi)
@@ -304,7 +310,7 @@ if __name__ == '__main__':
                         help='The phi-velocity maximum to use in the colorbar. Defaults to None.')
     parser.add_argument('-tol', action='store', type=float, default=1e-15,
                         help='The fast magnetosonic tolerance to use when plotting. Defaults to 1e-15.')
-    parser.add_argument('-t', '-title', type=str, action='store', default=r'P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}',
+    parser.add_argument('-t', '-title', type=str, action='store', default=_sentinel,
                         help='The title to use for the plot. Defaults to a LaTeX-set rotating magnetar of set luminosity title.')
     parser.add_argument('-iso', action='store_true',
                         help='If the simulation is isothermal so P=rho*cT^2.')
@@ -324,8 +330,6 @@ if __name__ == '__main__':
                         help='R* value for isothermal zeta quantity. Defaults to 1.2e6 cm.')
     parser.add_argument('-sm', '-smooth', action='store_true',
                         help='If Gaussian smoothing should be applied to surface plots. Defaults to False.')
-    parser.add_argument('-slen', '-scalelen', type=float, action='store', default=50,
-                        help='The scale bar length to use for the plot in km. Defaults to 50 km.')
 
     args = parser.parse_args()
 
@@ -351,6 +355,5 @@ if __name__ == '__main__':
 
     plot(prim_file=args.prim, uov_file=args.uov, output_path=args.s, obound=args.ob, density=args.d,
          vr_range=vr_range, vphi_range=vphi_range, tol=args.tol, title=args.t, iso=args.iso, cT=args.cT,
-         calculate_iso_quantities=args.ciq, star_constants=constants, smooth_surfaces=args.sm,
-         scale_bar_length=args.slen)
+         calculate_iso_quantities=args.ciq, star_constants=constants, smooth_surfaces=args.sm)
 
