@@ -14,10 +14,9 @@ import warnings
 
 from scipy.interpolate import RectBivariateSpline
 from typing import *
-from cmcrameri import cm as cm_cvd
 
 _sentinel = object()
-_default_title = r'P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu_{\rm e}}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}'
+_default_title = r'P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu}_{\rm e}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}'
 
 def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, density: float = 15,
         vr_range: tuple = None, vphi_range: tuple = None, tol: float = 1e-15,
@@ -53,8 +52,6 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     # Get the polar projection for matplotlib
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
 
-    #print(f"Time: {df['Time']}")
-
     # Get the minimum and maximum r values
     r_min = np.min(df['x1v'][:])
     r_max = np.max(df['x1v'][:])
@@ -68,6 +65,7 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
         obound = r_max
 
     # Set colors (for ease of changing and use later)
+    # Paul Tol's vibrant color scheme: https://packages.tesselle.org/khroma/articles/tol.html
     sonic_surface_color = '#cc3311'
     alfven_surface_color = '#0077bb'
     magnetosonic_surface_color = '#ee7733'
@@ -122,6 +120,7 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
     vphi_min = -vphi_max
 
     # Phi-Velocity colormesh profiles
+    # Iceburn used as colormap for CVD-friendliness as a diverging colorscheme: https://cmasher.readthedocs.io/user/diverging/iceburn.html#iceburn
     if vphi_range is None:
         res2 = ax.pcolormesh(theta, r, vphi, cmap=cmr.iceburn, shading='gouraud', vmin=vphi_min, vmax=vphi_max)
     else:
@@ -186,16 +185,15 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
         cs = df_uov['dt3'][0]
     else:
         cs = cT
-    v_poloidal = np.sqrt(((df['vel1'][0]**2)+(df['vel2'][0]**2)))
-    v_alfven = np.sqrt(((Br**2)+(Btheta**2))/(4*np.pi*df['rho'][0]))
+    v_poloidal = ((df['vel1'][0]**2)+(df['vel2'][0]**2))
+    v_alfven = ((Br**2)+(Btheta**2))/(4*np.pi*df['rho'][0])
     mag_B = np.sqrt((Br**2)+(Btheta**2)+(Bphi**2))
     cos_theta = Br/mag_B
-    v_fast_magnetosonic_sq = 0.5*(
-        (v_alfven**2)+(cs**2)+np.sqrt(
-            ((v_alfven**2)+(cs**2))**2 - 4*(v_alfven**2)*(cs**2)*(cos_theta**2)
-        )
+    v_fast_magnetosonic = 0.5*(
+            (v_alfven)+(cs**2)+np.sqrt(
+                ((v_alfven)+(cs**2))**2 - 4*(v_alfven)*(cs**2)*(cos_theta**2)
+            )
     )
-    v_fast_magnetosonic = np.sqrt(v_fast_magnetosonic_sq)
 
     # Full plot range for contour plotting
     #theta_full = np.concatenate([-theta_true[::-1], theta_true])
@@ -249,7 +247,7 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
             warnings.warn('Isothermal and calculating iso quantities enabled, but star constants missing key quantities.')
         else:
             M, R, B, Omega, rho = star_constants['M*'], star_constants['R*'], star_constants['B*'], star_constants['Omega*'], star_constants['rho*']
-            G = 6.6743e-8
+            G = 6.6743e-8  # G in CGS
 
             xi_B = np.sqrt(((B**2)*R)/(8*np.pi*G*M*rho))
             xi_Omega = np.sqrt(((Omega**2)*(R**3))/(2*G*M))
@@ -261,11 +259,14 @@ def plot(prim_file: str, uov_file: str, output_path: str, obound: float = None, 
             xi_B = round(xi_B, 3)
             xi_T = round(xi_T, 3)
 
-            exponent = int(math.floor(math.log10(abs(xi_Omega))))
-            significand = xi_Omega / (10**exponent)
-            significand_str = f'{significand:.2f}'
+            if xi_Omega != 0.0:
+                exponent = int(math.floor(math.log10(abs(xi_Omega))))
+                significand = xi_Omega / (10**exponent)
+                significand_str = f'{significand:.2f}'
 
-            title = fr'\xi_B={xi_B:.2f},\ \xi_\Omega={significand_str}\times 10^{{{exponent}}},\ \xi_T={xi_T:.2f}'
+                title = fr'\xi_B={xi_B:.2f},\ \xi_\Omega={significand_str}\times 10^{{{exponent}}},\ \xi_T={xi_T:.2f}'
+            else:
+                title = fr'\xi_B={xi_B:.2f},\ \xi_\Omega={xi_Omega:.2f},\ \xi_T={xi_T:.2f}'
 
     # Check for default title
     if title is _sentinel and not iso and not calculate_iso_quantities:
