@@ -9,6 +9,9 @@ simulation:
   tol: 1e-15
   title: null
   smooth_surfaces: false
+  deg_phi: 45
+  n_phi: 16
+  phi_max: 360
 
 prop:
   M: 2.7839e33 

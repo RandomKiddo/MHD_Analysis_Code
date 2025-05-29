@@ -13,16 +13,21 @@ import math
 import scipy.ndimage
 import warnings
 import yaml
-import importlib.util
 
 from scipy.interpolate import RectBivariateSpline
 from typing import *
 from sim_configs import *
 
+
 _default_title = r'P_{\star}=200\ {\rm ms},\ B_0=3\times 10^{15}\ {\rm G},\ L_{\bar{\nu}_{\rm e}}=8\times 10^{51}\ {\rm ergs}\ {\rm s}^{-1}'
+
 
 def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_config: EOSConfig) -> None:
     """
+    Plots the 2D profiles using the Athena++ simulation dataframe files. <br>
+    :param config: Simulation configuration dataclass from YAML. <br>
+    :param stellar_properties: Stellar properties constants dataclass from YAML. <br>
+    :param eos_config: EOS configuration dataclass from YAML.
     """
 
     # Read the Athena data frames
@@ -66,10 +71,14 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     )]
     ax.legend(handles=legend_elements, loc='center', bbox_to_anchor=(0.5, -0.1))
 
+    # Prep phi slice
+    deg_phi, n_phi, phi_max = float(config.deg_phi), float(config.n_phi), float(config.phi_max)
+    phi = int((n_phi/phi_max)*deg_phi)
+
     # Fetch all the values (magnetic fields, theta/r values, etc.)
-    Br = df['Bcc1'][0]
-    Btheta = df['Bcc2'][0]
-    Bphi = df['Bcc3'][0]
+    Br = df['Bcc1'][phi]
+    Btheta = df['Bcc2'][phi]
+    Bphi = df['Bcc3'][phi]
 
     thetaf = df['x2f']
     theta = df['x2v']
@@ -85,7 +94,7 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     r = r_true
     theta = np.linspace(thetaf[0], thetaf[-1], theta_true.shape[0])
     r, theta = np.meshgrid(r, theta)
-    vr = df['vel1'][0]/1e9
+    vr = df['vel1'][phi]/1e9
     vr = vr[:, mask]
 
     # R-Velocity colormesh profiles
@@ -98,7 +107,7 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     r = r_true
     theta = np.linspace(-thetaf[-1], -thetaf[0], theta_true.shape[0])
     r, theta = np.meshgrid(r, theta)
-    vphi = df['vel3'][0]/1e9
+    vphi = df['vel3'][phi]/1e9
     vphi = vphi[:, mask]
     vphi_max = np.max(vphi)
     vphi_min = -vphi_max
@@ -166,11 +175,11 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
 
     # Calculate different wind speeds
     if not isinstance(eos_config, IsothermalEOSConfig):
-        cs = df_uov['dt3'][0]
+        cs = df_uov['dt3'][phi]
     else:
         cs = float(eos_config.cT)
-    v_poloidal = ((df['vel1'][0]**2)+(df['vel2'][0]**2))
-    v_alfven = ((Br**2)+(Btheta**2))/(4*np.pi*df['rho'][0])
+    v_poloidal = ((df['vel1'][phi]**2)+(df['vel2'][phi]**2))
+    v_alfven = ((Br**2)+(Btheta**2))/(4*np.pi*df['rho'][phi])
     mag_B = np.sqrt((Br**2)+(Btheta**2)+(Bphi**2))
     cos_theta = Br/mag_B
     v_fast_magnetosonic = 0.5*(
@@ -193,7 +202,7 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
         frac_full = np.concatenate([frac[::-1, :], frac], axis=0)
         ax.contour(theta_grid, r_grid, frac_full, [1], colors=sonic_surface_color, linewidths=1)
     else:
-        frac = df['vel1'][0][:, mask]/float(eos_config.cT)
+        frac = df['vel1'][phi][:, mask]/float(eos_config.cT)
         if bool(config.smooth_surfaces):
             frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0)
         frac_full = np.concatenate([frac[::-1, :], frac], axis=0)
@@ -270,6 +279,12 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
 
 
 def load_config(yaml_path: str) -> Tuple[SimulationConfig, StellarPropConfig, EOSConfig]:
+    """
+    Loads dataclass configs from YAML. <br>
+    :param yaml_path: Path to YAML file to read. <br>
+    :return: A tuple containing the SimulationConfig, StellarPropConfig, and EOSConfig instances.
+    """
+
     with open(yaml_path, 'r') as f:
         cfg = yaml.safe_load(f)
     
@@ -299,3 +314,4 @@ if __name__ == '__main__':
 
     sim, prop, eos = load_config(args.config)
     plot(sim, prop, eos) 
+

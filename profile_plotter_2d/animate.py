@@ -16,7 +16,14 @@ from tqdm import tqdm
 from sim_configs import *
 from dataclasses import replace
 
+
 def animate(config: SimulationConfig, animation_config: AnimationConfig) -> None:
+    """
+    Animates a directory of 2D profile images of all the same size. <br>
+    :param config: Simulation configuration dataclass from YAML. <br>
+    :param animation_config: Animation configuration dataclass from YAML.
+    """
+
     t0 = time.time()
 
     images = []
@@ -30,7 +37,14 @@ def animate(config: SimulationConfig, animation_config: AnimationConfig) -> None
 
     print(f'Fcn *animate* completed in {time.time()-t0}s')
 
+
 def receive(config: SimulationConfig) -> Tuple[List, List]:
+    """
+    Receives the current primitive and uov data file paths. <br>
+    :param config: Simulation configuration dataclass from YAML. <br>
+    :return: A tuple of lists, the first being the sorted prim files and the other being the sorted uov files.
+    """
+
     prim = []
     uov = []
 
@@ -47,7 +61,16 @@ def receive(config: SimulationConfig) -> Tuple[List, List]:
 
     return prim, uov
 
+
 def create(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_config: EOSConfig, animation_config: AnimationConfig) -> None:
+    """
+    Creates a directory of 2D profile images. <br>
+    :param config: Simulation configuration dataclass from YAML. <br>
+    :param stellar_properties: Stellar properties constants dataclass from YAML. <br>
+    :param eos_config: EOS configuration dataclass from YAML. <br>
+    :param animation_config: Animation configuration dataclass from YAML.
+    """
+    
     t0 = time.time()
 
     prim, uov = receive(config)
@@ -61,7 +84,13 @@ def create(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_
     
     print(f'Fcn *create* completed in {time.time()-t0}s')
 
+
 def find_min_max(config: SimulationConfig) -> None:
+    """
+    Finds the maximum and minimum v_r and v_phi values over the given boundaries. <br>
+    :param config: The SimulationConfig instance, dictating simulation configuration. 
+    """
+
     t0 = time.time()
 
     prim, uov = receive(config)
@@ -110,6 +139,12 @@ def find_min_max(config: SimulationConfig) -> None:
 
 
 def load_config(yaml_path: str) -> Tuple[SimulationConfig, StellarPropConfig, EOSConfig, AnimationConfig]:
+    """
+    Loads dataclass configs from YAML. <br>
+    :param yaml_path: Path to YAML file to read. <br>
+    :return: A tuple containing the SimulationConfig, StellarPropConfig, EOSConfig, and AnimationConfig instances.
+    """
+
     with open(yaml_path, 'r') as f:
         cfg = yaml.safe_load(f)
     
@@ -147,3 +182,4 @@ if __name__ == '__main__':
         if bool(animation.create):
             create(sim, prop, eos, animation)
         animate(sim, animation)
+

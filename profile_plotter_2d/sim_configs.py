@@ -3,56 +3,125 @@ import numpy as np
 from dataclasses import dataclass
 from typing import *
 
-# Data class for simulation, configuring the 2d profile output
+
 @dataclass
 class SimulationConfig:
-    prim_file: str  # location of prim file
-    uov_file: str  # location of uov file
-    output_path: str  # plot output location
-    outer_boundary: Optional[float] = None  # Plot outer boundary
-    density: float = 1  # Field line density
-    vr_range: Optional[Tuple[float, float]] = None  # vr colorbar range
-    vphi_range: Optional[Tuple[float, float]] = None  # vphi colorbar range
-    tol: float = 1e-15  # Fast magnetosonic surface plotting tolerance
-    title: Optional[str] = None  # Plot title
-    smooth_surfaces: bool = False  # Use gaussian smoothing for surfaces
+    """
+    Simulation Config. <br>
+    Data class for simulation, configuring the 2d profile output.
+    """
+
+    prim_file: str
+    """Location of prim file."""
+
+    uov_file: str
+    """Location of uov file."""
+
+    output_path: str
+    """Plot output location."""
+
+    outer_boundary: Optional[float] = None
+    """Plot outer boundary."""
+
+    density: float = 1
+    """Field line density."""
+
+    vr_range: Optional[Tuple[float, float]] = None
+    """vr colorbar range."""
+
+    vphi_range: Optional[Tuple[float, float]] = None
+    """vphi colorbar range."""
+
+    tol: float = 1e-15
+    """Fast magnetosonic surface plotting tolerance."""
+
+    title: Optional[str] = None
+    """Plot title."""
+
+    smooth_surfaces: bool = False
+    """Use gaussian smoothing for surfaces."""
+
+    deg_phi: float = 180
+    """Phi degree value to use."""
+
+    n_phi: int = 1
+    """Number of phi cells."""
+
+    phi_max: float = 360
+    """Max phi value."""
 
 
-# Stellar properties config, like stellar mass, radius, etc.
 @dataclass
 class StellarPropConfig:
-    M: float = 1.4*1.9885e33  # Stellar mass in g
-    R: float = 1.2e6  # Stellar radius in cm
-    B: float = 3e15  # Stellar magnetic field in G
-    Omega: float = 2*np.pi/0.3  # Stellar rotation Omega in s^-1
-    rho: float = 4e11  # Stellar density in g/cm^3
+    """
+    Stellar Properties Config. <br>
+    Stellar properties config, like stellar mass, radius, etc.
+    """
+
+    M: float = 1.4*1.9885e33
+    """Stellar mass in g."""
+
+    R: float = 1.2e6
+    """Stellar radius in cm."""
+
+    B: float = 3e15
+    """Stellar magnetic field in G."""
+
+    Omega: float = 2*np.pi/0.3
+    """Stellar rotation Omega in s^-1."""
+
+    rho: float = 4e11
+    """Stellar density in g/cm^3."""
 
 
-# Isothermal EOS data class, containing iso constants
 @dataclass
 class IsothermalEOSConfig:
-    type: str  # 'general', 'isothermal', etc. (should be 'isothermal')
-    cT: float = 3e9  # isothermal sound speed in cm/s
-    calculate_iso_quantities: bool = False  # If iso xi constants should be calculated, will override title
+    """
+    Isothermal EOS Config. <br>
+    Isothermal EOS data class, containing iso constants.
+    """
+
+    type: str
+    """EOS type, i.e., 'general', 'isothermal', etc. (should be 'isothermal')."""
+
+    cT: float = 3e9
+    """Isothermal sound speed in cm/s."""
+
+    calculate_iso_quantities: bool = False
+    """If iso xi constants should be calculated, will override title."""
 
 
 # General EOS data class
 @dataclass
 class GeneralEOSConfig:
-    type: str  # Should be 'general'
+    """General EOS Config."""
+
+    type: str
+    """EOS type, should be 'general'."""
 
 
-# EOS config type
 EOSConfig = Union[IsothermalEOSConfig, GeneralEOSConfig]
+"""EOS config type"""
 
 
-# Animation Config (opt.)
-# With AnimationConfig, use SimulationConfig's prim_file, uov_file, and output_path as directories
-# Use prim_file=uov_file
-# Include animation output extension in output_path, i.e., mp4
 @dataclass
 class AnimationConfig:
-    animation_name: str  # Animation name plus extension (i.e., mp4)
-    create: bool = False  # Create 2d profile plots to animate
-    extension: str = 'png'  # Output plots file extension
-    find: bool = False  # Find the maximum and minimum velocity values
+    """
+    Animation Config. <br>
+    With AnimationConfig, use SimulationConfig's prim_file, uov_file, and output_path as directories. <br>
+    Use prim_file=uov_file. <br>
+    Include animation output extension in output_path, i.e., mp4. 
+    """
+    
+    animation_name: str
+    """Animation name plus extension (i.e., mp4)"""
+
+    create: bool = False
+    """Create 2d profile plots to animate"""
+
+    extension: str = 'png'
+    """Output plots file extension"""
+
+    find: bool = False
+    """Find the maximum and minimum velocity values"""
+
