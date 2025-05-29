@@ -188,27 +188,27 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     # Adiabatic Sonic Surface / General Sonic Surface
     if not isinstance(eos_config, IsothermalEOSConfig):
         frac = cs[:, mask]/v_poloidal[:, mask]
-        if config.smooth_surfaces:
+        if bool(config.smooth_surfaces):
             frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0)
         frac_full = np.concatenate([frac[::-1, :], frac], axis=0)
         ax.contour(theta_grid, r_grid, frac_full, [1], colors=sonic_surface_color, linewidths=1)
     else:
         frac = df['vel1'][0][:, mask]/float(eos_config.cT)
-        if config.smooth_surfaces:
+        if bool(config.smooth_surfaces):
             frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0)
         frac_full = np.concatenate([frac[::-1, :], frac], axis=0)
         ax.contour(theta_grid, r_grid, frac_full, [1], colors=sonic_surface_color, linewidths=1)
 
     # Alfvén Surface
     frac = v_alfven[:, mask]/v_poloidal[:, mask]
-    if config.smooth_surfaces:
+    if bool(config.smooth_surfaces):
         frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0)
     frac_full = np.concatenate([frac[::-1, :], frac], axis=0)
     ax.contour(theta_grid, r_grid, frac_full, [1], colors=alfven_surface_color, linewidths=1)
 
     # Fast Magnetosonic Surface
     frac = v_fast_magnetosonic[:, mask]/v_poloidal[:, mask]
-    if config.smooth_surfaces:
+    if bool(config.smooth_surfaces):
         frac = scipy.ndimage.gaussian_filter(frac, sigma=1.0, order=0) 
     frac_full = np.concatenate([frac[::-1, :], frac], axis=0)
     ax.contour(theta_grid, r_grid, frac_full, [1], colors=magnetosonic_surface_color, linewidths=1)

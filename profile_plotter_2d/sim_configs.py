@@ -41,4 +41,18 @@ class IsothermalEOSConfig:
 class GeneralEOSConfig:
     type: str  # Should be 'general'
 
+
+# EOS config type
 EOSConfig = Union[IsothermalEOSConfig, GeneralEOSConfig]
+
+
+# Animation Config (opt.)
+# With AnimationConfig, use SimulationConfig's prim_file, uov_file, and output_path as directories
+# Use prim_file=uov_file
+# Include animation output extension in output_path, i.e., mp4
+@dataclass
+class AnimationConfig:
+    animation_name: str  # Animation name plus extension (i.e., mp4)
+    create: bool = False  # Create 2d profile plots to animate
+    extension: str = 'png'  # Output plots file extension
+    find: bool = False  # Find the maximum and minimum velocity values
