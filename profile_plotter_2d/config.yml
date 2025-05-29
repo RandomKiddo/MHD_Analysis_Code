@@ -1,0 +1,24 @@
+simulation:
+  prim_file: /Volumes/RESEARCHUSB/URAP/Outputs/9_omega/out/parker.prim.00080.athdf
+  uov_file: /Volumes/RESEARCHUSB/URAP/Outputs/9_omega/out/parker.uov.00080.athdf
+  output_path: /Volumes/RESEARCHUSB/URAP/Analysis/profile_plotting_2d/new_plotter.png
+  outer_boundary: 2e7
+  density: 1
+  vr_range: [0, 10]
+  vphi_range: [-0.25, 0.25]
+  tol: 1e-15
+  title: "Title"
+  smooth_surfaces: false
+
+prop:
+  M: 2.7839e33 
+  R: 1.2e6 
+  B: 3e15
+  Omega: 20.9439510239
+  rho: 4e11
+
+eos:
+  type: isothermal
+  cT: 3e9
+  calculate_iso_quantities: true 
+  

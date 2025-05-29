@@ -1,0 +1,44 @@
+import numpy as np
+
+from dataclasses import dataclass
+from typing import *
+
+# Data class for simulation, configuring the 2d profile output
+@dataclass
+class SimulationConfig:
+    prim_file: str  # location of prim file
+    uov_file: str  # location of uov file
+    output_path: str  # plot output location
+    outer_boundary: Optional[float] = None  # Plot outer boundary
+    density: float = 1  # Field line density
+    vr_range: Optional[Tuple[float, float]] = None  # vr colorbar range
+    vphi_range: Optional[Tuple[float, float]] = None  # vphi colorbar range
+    tol: float = 1e-15  # Fast magnetosonic surface plotting tolerance
+    title: Optional[str] = None  # Plot title
+    smooth_surfaces: bool = False  # Use gaussian smoothing for surfaces
+
+
+# Stellar properties config, like stellar mass, radius, etc.
+@dataclass
+class StellarPropConfig:
+    M: float = 1.4*1.9885e33  # Stellar mass in g
+    R: float = 1.2e6  # Stellar radius in cm
+    B: float = 3e15  # Stellar magnetic field in G
+    Omega: float = 2*np.pi/0.3  # Stellar rotation Omega in s^-1
+    rho: float = 4e11  # Stellar density in g/cm^3
+
+
+# Isothermal EOS data class, containing iso constants
+@dataclass
+class IsothermalEOSConfig:
+    type: str  # 'general', 'isothermal', etc. (should be 'isothermal')
+    cT: float = 3e9  # isothermal sound speed in cm/s
+    calculate_iso_quantities: bool = False  # If iso xi constants should be calculated, will override title
+
+
+# General EOS data class
+@dataclass
+class GeneralEOSConfig:
+    type: str  # Should be 'general'
+
+EOSConfig = Union[IsothermalEOSConfig, GeneralEOSConfig]
