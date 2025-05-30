@@ -90,6 +90,9 @@ class IsothermalEOSConfig:
     calculate_iso_quantities: bool = False
     """If iso xi constants should be calculated, will override title."""
 
+    use_iso_colormesh: bool = False
+    """If iso colormesh should be used instead of the typical vr and vphi colormesh."""
+
 
 # General EOS data class
 @dataclass

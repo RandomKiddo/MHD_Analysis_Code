@@ -1,3 +1,14 @@
+"""
+This code is for analysis on athdf files from Athena++: https://github.com/PrincetonUniversity/athena
+This code is original, but the outputs were made to resemble those in Prasanna et. al. (general EOS) and Raives et. al. (isothermal EOS)
+
+Prasanna et. al.: https://ui.adsabs.harvard.edu/abs/2022MNRAS.517.3008P/abstract
+                  https://ui.adsabs.harvard.edu/abs/2023MNRAS.526.3141P/abstract
+                  https://ui.adsabs.harvard.edu/abs/2024ApJ...973...91P/abstract
+
+Ravies et. al.: https://ui.adsabs.harvard.edu/abs/2023MNRAS.526.4418R/abstract
+"""
+
 import sys
 sys.path.insert(0, '/Volumes/RESEARCHUSB/Research/DEBUG/vis/python')
 
@@ -97,11 +108,20 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     vr = df['vel1'][phi]/1e9
     vr = vr[:, mask]
 
-    # R-Velocity colormesh profiles
+    # r-Velocity colormesh profiles, or isothermal poloidal velocity over cT profiles
+    not_iso_colormesh_condition = not isinstance(eos_config, IsothermalEOSConfig) and not eos_config.use_iso_colormesh
     if config.vr_range is None:
-        res1 = ax.pcolormesh(theta, r, vr, cmap=cm.magma, shading='gouraud', vmin=0)
+        if not_iso_colormesh_condition:
+            res1 = ax.pcolormesh(theta, r, vr, cmap=cm.magma, shading='gouraud', vmin=0)
+        else:
+            vp_over_cT  = (np.sqrt(((df['vel1'][phi]**2)+(df['vel2'][phi]**2)))/float(eos_config.cT))[:, mask]
+            res1 = ax.pcolormesh(theta, r, vp_over_cT, cmap=cm.magma, shading='gouraud', vmin=0)
     else:
-        res1 = ax.pcolormesh(theta, r, vr, cmap=cm.magma, shading='gouraud', vmin=config.vr_range[0], vmax=config.vr_range[1])
+        if not_iso_colormesh_condition:
+            res1 = ax.pcolormesh(theta, r, vr, cmap=cm.magma, shading='gouraud', vmin=config.vr_range[0], vmax=config.vr_range[1])
+        else:
+            vp_over_cT  = (np.sqrt(((df['vel1'][phi]**2)+(df['vel2'][phi]**2)))/float(eos_config.cT))[:, mask]
+            res1 = ax.pcolormesh(theta, r, vp_over_cT, cmap=cm.magma, shading='gouraud', vmin=config.vr_range[0], vmax=config.vr_range[1])
 
     # Prepeare phi-velocity data
     r = r_true
@@ -112,19 +132,39 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     vphi_max = np.max(vphi)
     vphi_min = -vphi_max
 
-    # Phi-Velocity colormesh profiles
+    # Phi-Velocity colormesh profiles, or isothermal beta plasma profiles
     # Iceburn used as colormap for CVD-friendliness as a diverging colorscheme: https://cmasher.readthedocs.io/user/diverging/iceburn.html#iceburn
     if config.vphi_range is None:
-        res2 = ax.pcolormesh(theta, r, vphi, cmap=cmr.iceburn, shading='gouraud', vmin=vphi_min, vmax=vphi_max)
+        if not_iso_colormesh_condition:
+            res2 = ax.pcolormesh(theta, r, vphi, cmap=cmr.iceburn, shading='gouraud', vmin=vphi_min, vmax=vphi_max)
+        else:
+            mag_B_sq = (Br**2)+(Btheta**2)+(Bphi**2)
+            beta = 2*(float(eos_config.cT)**2)*df['rho'][phi]/mag_B_sq
+            beta = np.log10(beta[:, mask])
+            beta_max = np.max(beta)
+            res2 = ax.pcolormesh(theta, r, beta, cmap=cmr.iceburn, shading='gouraud', vmin=-beta_max, vmax=beta_max)
     else:
-        res2 = ax.pcolormesh(theta, r, vphi, cmap=cmr.iceburn, shading='gouraud', vmin=config.vphi_range[0], vmax=config.vphi_range[1])
+        if not_iso_colormesh_condition:
+            res2 = ax.pcolormesh(theta, r, vphi, cmap=cmr.iceburn, shading='gouraud', vmin=config.vphi_range[0], vmax=config.vphi_range[1])
+        else:
+            mag_B_sq = (Br**2)+(Btheta**2)+(Bphi**2)
+            beta = 2*(float(eos_config.cT)**2)*df['rho'][phi]/mag_B_sq
+            beta = np.log10(beta[:, mask])
+            res2 = ax.pcolormesh(theta, r, beta, cmap=cmr.iceburn, shading='gouraud', vmin=config.vphi_range[0], vmax=config.vphi_range[1])
 
     # Colorbars for the colormesh profiles
-    cbar = plt.colorbar(res1, ax=ax, label=r'$v_r\ \left[10^9\ {\rm cm}\ {\rm s}^{-1}\right]$', location='left', fraction=0.05, extend='max')
-    if not np.all(vphi == 0):
-        cbar = plt.colorbar(res2, ax=ax, label=r'$v_{\phi}\ \left[10^9\ {\rm cm}\ {\rm s}^{-1}\right]$', location='right', fraction=0.05, extend='both')
+    if not_iso_colormesh_condition:
+        cbar = plt.colorbar(res1, ax=ax, label=r'$v_r\ \left[10^9\ {\rm cm}\ {\rm s}^{-1}\right]$', location='left', fraction=0.05, extend='max')
+        if not np.all(vphi == 0):
+            cbar = plt.colorbar(res2, ax=ax, label=r'$v_{\phi}\ \left[10^9\ {\rm cm}\ {\rm s}^{-1}\right]$', location='right', fraction=0.05, extend='both')
+        else:
+            cbar = plt.colorbar(res2, ax=ax, label=r'$v_{\phi}\ \left[10^9\ {\rm cm}\ {\rm s}^{-1}\right]$', location='right', fraction=0.05)
     else:
-        cbar = plt.colorbar(res2, ax=ax, label=r'$v_{\phi}\ \left[10^9\ {\rm cm}\ {\rm s}^{-1}\right]$', location='right', fraction=0.05)
+        cbar = plt.colorbar(res1, ax=ax, label=r'$v_{\rm p}/c_T$', location='left', fraction=0.05, extend='max')
+        if not np.all(vphi == 0):
+            cbar = plt.colorbar(res2, ax=ax, label=r'$\log_{10}{(\beta)}$', location='right', fraction=0.05, extend='both')
+        else:
+            cbar = plt.colorbar(res2, ax=ax, label=r'$\log_{10}{(\beta)}$', location='right', fraction=0.05)
 
     # Interpolate magnetic field data to make streamplots of magnetic field lines
     thetaf = df['x2f']  # face centers theta

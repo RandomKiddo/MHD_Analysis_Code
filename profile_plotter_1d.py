@@ -1,3 +1,12 @@
+"""
+This code is for analysis on athdf files from Athena++: https://github.com/PrincetonUniversity/athena
+This code is original, but the outputs were made to resemble those in Prasanna et. al.
+
+Prasanna et. al.: https://ui.adsabs.harvard.edu/abs/2022MNRAS.517.3008P/abstract
+                  https://ui.adsabs.harvard.edu/abs/2023MNRAS.526.3141P/abstract
+                  https://ui.adsabs.harvard.edu/abs/2024ApJ...973...91P/abstract
+"""
+
 import sys
 sys.path.insert(0, '/Volumes/RESEARCHUSB/Research/DEBUG/vis/python')
 
