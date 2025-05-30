@@ -1,7 +1,7 @@
 simulation:
   prim_file: /Volumes/RESEARCHUSB/URAP/Outputs/9_omega/out/
   uov_file: /Volumes/RESEARCHUSB/URAP/Outputs/9_omega/out/
-  output_path: /Volumes/RESEARCHUSB/URAP/Analysis/profile_plotter_2d/out/
+  output_path: /Volumes/RESEARCHUSB/URAP/Analysis/profile_plotter_2d/out_1d/
   outer_boundary: 2e7
   density: 1
   vr_range: [0, 10]
@@ -9,8 +9,8 @@ simulation:
   tol: 1e-15
   title: null
   smooth_surfaces: false
-  deg_phi: 45
-  n_phi: 16
+  deg_phi: 180
+  n_phi: 1
   phi_max: 360
 
 prop:
@@ -31,3 +31,8 @@ animation:
   find: false
   animation_name: animation.mp4
   
+1d:
+  deg_theta: 45
+  n_theta: 128
+  theta_max: 180
+  recursive: true

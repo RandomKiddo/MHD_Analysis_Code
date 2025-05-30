@@ -48,7 +48,7 @@ class SimulationConfig:
     """Number of phi cells."""
 
     phi_max: float = 360
-    """Max phi value."""
+    """Max phi degree value."""
 
 
 @dataclass
@@ -125,3 +125,23 @@ class AnimationConfig:
     find: bool = False
     """Find the maximum and minimum velocity values"""
 
+
+@dataclass
+class AdditionalSimulation1DConfig:
+    """
+    Additional Simulation 1D Config. <br>
+    Data class for 1d profile plotting, configuring the 1d profile output. <br>
+    This adds additional information required for 1d profile plotting.
+    """
+
+    deg_theta: float = 45
+    """Theta degree value to use."""
+
+    n_theta: int = 128
+    """Number of theta cells."""
+
+    theta_max: float = 180
+    """Max theta degree value."""
+
+    recursive: bool = False
+    """If the plotter should run recursively, outputting profile plots for every athdf file in a directory."""
