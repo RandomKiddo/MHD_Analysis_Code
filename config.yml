@@ -1,18 +1,18 @@
 # Configuration file for use in 1d profile plotting, 2d profile plotting, and movie animations. 
 
 simulation:  # Simulation configuration data, constraints on the profile plotting.
-  prim_file: /Volumes/RESEARCHUSB/URAP/Outputs/9_3d/out/  # Location of prim athdf file or directory of prim files.
-  uov_file: /Volumes/RESEARCHUSB/URAP/Outputs/9_3d/out/  # Location of uov athdf file or directory of uov files.
-  output_path: /Volumes/RESEARCHUSB/URAP/Analysis/profile_plotter_2d/3d/1_180/ # Output location plus filename and extension or directory of output files.
+  prim_file: /Volumes/RESEARCHUSB/URAP/Outputs/10_cut/out/  # Location of prim athdf file or directory of prim files.
+  uov_file: /Volumes/RESEARCHUSB/URAP/Outputs/10_cut/out/  # Location of uov athdf file or directory of uov files.
+  output_path: /Volumes/RESEARCHUSB/URAP/Analysis/10_test/ # Output location plus filename and extension or directory of output files.
   outer_boundary: 2e7  # Outer boundary restriction.
   density: 1  # Magnetic field line density.
-  vr_range: [0, 4]  # Restriction on vr colormesh range.
-  vphi_range: [-1.5, 1.5]  # Restriction on vphi colormesh range
+  vr_range: [0, 10]  # Restriction on vr colormesh range.
+  vphi_range: [-0.25, 0.25]  # Restriction on vphi colormesh range
   tol: 1e-15  # Fast magnetosonic surface tolerance. Set to 0 for high-res sims.
   title: null  # Title of the sim. LaTeX supported.
   smooth_surfaces: false  # If Gaussian smoothing should be applied to the surface. 
   deg_phi: 180  # Phi degree value to use.
-  n_phi: 16  # Number of phi cells.
+  n_phi: 1  # Number of phi cells.
   phi_max: 360  # Max phi value. 
 
 prop:  # Stellar properties, like mass, density, etc. 
@@ -26,7 +26,7 @@ eos:  # EOS configuration.
   type: isothermal  # EOS type; 'general', 'isothermal', etc.
   cT: 3e9  # Isothermal sound speed, if required.
   calculate_iso_quantities: true  # If isothermal xi quantities should be calculated. Will replace title.
-  use_iso_colormesh: true  # If isothermal colormesh should be used instead of the typical vr and vphi colormesh. 
+  use_iso_colormesh: false  # If isothermal colormesh should be used instead of the typical vr and vphi colormesh. 
 
 animation:  # Animation-specific configuration.
   create: true  # If the 2d profiles need to be created.

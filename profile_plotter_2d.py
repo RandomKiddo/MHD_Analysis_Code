@@ -109,7 +109,7 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     vr = vr[:, mask]
 
     # r-Velocity colormesh profiles, or isothermal poloidal velocity over cT profiles
-    not_iso_colormesh_condition = not isinstance(eos_config, IsothermalEOSConfig) and not eos_config.use_iso_colormesh
+    not_iso_colormesh_condition = isinstance(eos_config, IsothermalEOSConfig) and not eos_config.use_iso_colormesh
     if config.vr_range is None:
         if not_iso_colormesh_condition:
             res1 = ax.pcolormesh(theta, r, vr, cmap=cm.magma, shading='gouraud', vmin=0)
