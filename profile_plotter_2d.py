@@ -109,15 +109,15 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     vr = vr[:, mask]
 
     # r-Velocity colormesh profiles, or isothermal poloidal velocity over cT profiles
-    not_iso_colormesh_condition = isinstance(eos_config, IsothermalEOSConfig) and not eos_config.use_iso_colormesh
+    iso_colormesh_condition = isinstance(eos_config, IsothermalEOSConfig) and eos_config.use_iso_colormesh
     if config.vr_range is None:
-        if not_iso_colormesh_condition:
+        if not iso_colormesh_condition:
             res1 = ax.pcolormesh(theta, r, vr, cmap=cm.magma, shading='gouraud', vmin=0)
         else:
             vp_over_cT  = (np.sqrt(((df['vel1'][phi]**2)+(df['vel2'][phi]**2)))/float(eos_config.cT))[:, mask]
             res1 = ax.pcolormesh(theta, r, vp_over_cT, cmap=cm.magma, shading='gouraud', vmin=0)
     else:
-        if not_iso_colormesh_condition:
+        if not iso_colormesh_condition:
             res1 = ax.pcolormesh(theta, r, vr, cmap=cm.magma, shading='gouraud', vmin=config.vr_range[0], vmax=config.vr_range[1])
         else:
             vp_over_cT  = (np.sqrt(((df['vel1'][phi]**2)+(df['vel2'][phi]**2)))/float(eos_config.cT))[:, mask]
@@ -135,7 +135,7 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     # Phi-Velocity colormesh profiles, or isothermal beta plasma profiles
     # Iceburn used as colormap for CVD-friendliness as a diverging colorscheme: https://cmasher.readthedocs.io/user/diverging/iceburn.html#iceburn
     if config.vphi_range is None:
-        if not_iso_colormesh_condition:
+        if not iso_colormesh_condition:
             res2 = ax.pcolormesh(theta, r, vphi, cmap=cmr.iceburn, shading='gouraud', vmin=vphi_min, vmax=vphi_max)
         else:
             mag_B_sq = (Br**2)+(Btheta**2)+(Bphi**2)
@@ -144,7 +144,7 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
             beta_max = np.max(beta)
             res2 = ax.pcolormesh(theta, r, beta, cmap=cmr.iceburn, shading='gouraud', vmin=-beta_max, vmax=beta_max)
     else:
-        if not_iso_colormesh_condition:
+        if not iso_colormesh_condition:
             res2 = ax.pcolormesh(theta, r, vphi, cmap=cmr.iceburn, shading='gouraud', vmin=config.vphi_range[0], vmax=config.vphi_range[1])
         else:
             mag_B_sq = (Br**2)+(Btheta**2)+(Bphi**2)
@@ -153,7 +153,7 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
             res2 = ax.pcolormesh(theta, r, beta, cmap=cmr.iceburn, shading='gouraud', vmin=config.vphi_range[0], vmax=config.vphi_range[1])
 
     # Colorbars for the colormesh profiles
-    if not_iso_colormesh_condition:
+    if not iso_colormesh_condition:
         cbar = plt.colorbar(res1, ax=ax, label=r'$v_r\ \left[10^9\ {\rm cm}\ {\rm s}^{-1}\right]$', location='left', fraction=0.05, extend='max')
         if not np.all(vphi == 0):
             cbar = plt.colorbar(res2, ax=ax, label=r'$v_{\phi}\ \left[10^9\ {\rm cm}\ {\rm s}^{-1}\right]$', location='right', fraction=0.05, extend='both')
