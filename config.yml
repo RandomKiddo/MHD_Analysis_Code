@@ -1,10 +1,10 @@
 # Configuration file for use in 1d profile plotting, 2d profile plotting, and movie animations. 
 
 simulation:  # Simulation configuration data, constraints on the profile plotting.
-  prim_file: /Volumes/RESEARCHUSB/URAP/Analysis/parker.prim.00964.athdf  # Location of prim athdf file or directory of prim files.
-  uov_file: /Volumes/RESEARCHUSB/URAP/Analysis/parker.uov.00964.athdf  # Location of uov athdf file or directory of uov files.
-  output_path: /Volumes/RESEARCHUSB/URAP/Analysis/mine.png # Output location plus filename and extension or directory of output files.
-  outer_boundary: 1e7  # Outer boundary restriction.
+  prim_file: /Volumes/RESEARCHUSB/URAP/Outputs/9_omega/out/parker.prim.00100.athdf  # Location of prim athdf file or directory of prim files.
+  uov_file: /Volumes/RESEARCHUSB/URAP/Outputs/9_omega/out/parker.uov.00100.athdf  # Location of uov athdf file or directory of uov files.
+  output_path: /Volumes/RESEARCHUSB/URAP/Analysis/spread/1.png # Output location plus filename and extension or directory of output files.
+  outer_boundary: 2e7  # Outer boundary restriction.
   density: 1  # Magnetic field line density.
   vr_range: [0, 10]  # Restriction on vr colormesh range.
   vphi_range: [-2, 2]  # Restriction on vphi colormesh range
@@ -19,22 +19,22 @@ prop:  # Stellar properties, like mass, density, etc.
   M: 2.7839e33  # Stellar mass in g.
   R: 1.2e6  # Stellar radius in cm.
   B: 3e15  # Stellar magnetic field strength in G.
-  Omega: 0  # Stellar rotation speed in s^-1.
+  Omega: 20.9439510239  # Stellar rotation speed in s^-1.
   rho: 4e11  # Stellar density in g/cm^3.
 
 eos:  # EOS configuration.
-  type: general  # EOS type; 'general', 'isothermal', etc.
+  type: isothermal  # EOS type; 'general', 'isothermal', etc.
   cT: 3e9  # Isothermal sound speed, if required.
   calculate_iso_quantities: true  # If isothermal xi quantities should be calculated. Will replace title.
   use_iso_colormesh: false  # If isothermal colormesh should be used instead of the typical vr and vphi colormesh. 
 
-animation:  # Animation-specific configuration.
+animation:  # Animation-specific configuration. Ignored if not needed.
   create: true  # If the 2d profiles need to be created.
   extension: png  # 2d profile image extension.
   find: false  # If the max and min velocity values should be found across the domain.
   animation_name: animation.mp4  # The animation name.
   
-1d:  # 1d-specific configuration.
+1d:  # 1d-specific configuration. Ignored if not needed.
   deg_theta: 45  # Theta degree value to use.
   n_theta: 128  # Number of theta cells.
   theta_max: 180  # Max theta value.

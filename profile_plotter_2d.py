@@ -24,6 +24,9 @@ import math
 import scipy.ndimage
 import warnings
 import yaml
+import cProfile
+import io
+import pstats
 
 from scipy.interpolate import RectBivariateSpline
 from typing import *
@@ -65,7 +68,7 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
         config.outer_boundary = r_max
 
     # Set colors (for ease of changing and use later)
-    # Paul Tol's vibrant color scheme: https://packages.tesselle.org/khroma/articles/tol.html
+    # * Paul Tol's vibrant color scheme: https://packages.tesselle.org/khroma/articles/tol.html
     sonic_surface_color = '#cc3311'
     alfven_surface_color = '#0077bb'
     magnetosonic_surface_color = '#ee7733'
@@ -86,7 +89,8 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     deg_phi, n_phi, phi_max = float(config.deg_phi), float(config.n_phi), float(config.phi_max)
     phi = int((n_phi/phi_max)*deg_phi)
 
-    # Fetch all the values (magnetic fields, theta/r values, etc.)
+    # Fetch all the values (magnetic fields, theta/r values, etc.).
+    # ! These are in Lorentz-Heaviside units.
     Br = df['Bcc1'][phi]
     Btheta = df['Bcc2'][phi]
     Bphi = df['Bcc3'][phi]
@@ -123,7 +127,7 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
             vp_over_cT  = (np.sqrt(((df['vel1'][phi]**2)+(df['vel2'][phi]**2)))/float(eos_config.cT))[:, mask]
             res1 = ax.pcolormesh(theta, r, vp_over_cT, cmap=cm.magma, shading='gouraud', vmin=config.vr_range[0], vmax=config.vr_range[1])
 
-    # Prepeare phi-velocity data
+    # Prepare phi-velocity data
     r = r_true
     theta = np.linspace(-thetaf[-1], -thetaf[0], theta_true.shape[0])
     r, theta = np.meshgrid(r, theta)
@@ -133,7 +137,7 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     vphi_min = -vphi_max
 
     # Phi-Velocity colormesh profiles, or isothermal beta plasma profiles
-    # Iceburn used as colormap for CVD-friendliness as a diverging colorscheme: https://cmasher.readthedocs.io/user/diverging/iceburn.html#iceburn
+    # * Iceburn used as colormap for CVD-friendliness as a diverging colorscheme: https://cmasher.readthedocs.io/user/diverging/iceburn.html#iceburn
     if config.vphi_range is None:
         if not iso_colormesh_condition:
             res2 = ax.pcolormesh(theta, r, vphi, cmap=cmr.iceburn, shading='gouraud', vmin=vphi_min, vmax=vphi_max)
@@ -193,19 +197,15 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     r_interp = np.linspace(r[0], r_max, int(interp_n_r))
     
     # SciPy interp2d was initially used. Due to deprecation, RectBivariateSpline is used to interpolate instead.
-    # https://docs.scipy.org/doc/scipy/tutorial/interpolate/interp_transition_guide.html#interp-transition-guide
+    # * https://docs.scipy.org/doc/scipy/tutorial/interpolate/interp_transition_guide.html#interp-transition-guide
     rbs = RectBivariateSpline(r, theta, Br[:, mask].T)
     B1 = rbs(r_interp, theta_interp)
     rbs = RectBivariateSpline(r, theta, Btheta[:, mask].T)
     B2 = rbs(r_interp, theta_interp)
 
     # Mirror data from RectBivariateSpline
-    B1_flipped = np.zeros_like(B1)
-    for i in range(len(r_interp)):
-        B1_flipped[i, :] = B1[i, ::-1]  
-    B2_flipped = np.zeros_like(B2)
-    for i in range(len(r_interp)):
-        B2_flipped[i, :] = -B2[i, ::-1] 
+    B1_flipped = B1[:, ::-1]  
+    B2_flipped = -B2[:, ::-1] 
 
     # Streamplots for the magnetic field lines
     s1 = ax.streamplot(theta_interp, r_interp, B2 / r_interp[:, None], B1, density=config.density, linewidth=0.5, color='white',
@@ -219,7 +219,7 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     else:
         cs = float(eos_config.cT)
     v_poloidal = ((df['vel1'][phi]**2)+(df['vel2'][phi]**2))
-    v_alfven = ((Br**2)+(Btheta**2))/(4*np.pi*df['rho'][phi])
+    v_alfven = ((Br**2)+(Btheta**2))/(df['rho'][phi])
     mag_B = np.sqrt((Br**2)+(Btheta**2)+(Bphi**2))
     cos_theta = Br/mag_B
     v_fast_magnetosonic = 0.5*(
@@ -229,7 +229,6 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     )
 
     # Full plot range for contour plotting
-    #theta_full = np.concatenate([-theta_true[::-1], theta_true])
     theta_full = np.linspace(0, 2*np.pi, 2*len(theta_true))
     r_full = r_true
     theta_grid, r_grid = np.meshgrid(theta_full, r_full, indexing='ij')
@@ -306,7 +305,7 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     # Set title
     ax.set_title(f'${config.title}$')  # For use with LaTeX
 
-    # todo add scale bar
+    # todo add scale bar 
     
     plt.gca().set_aspect('equal')
     plt.tight_layout()
@@ -343,15 +342,36 @@ def load_config(yaml_path: str) -> Tuple[SimulationConfig, StellarPropConfig, EO
     return sim, prop, eos 
 
 
+def main(config_path: str) -> None:
+    """
+    Main function used for plotting and/or cProfile profiling. <br>
+    :param config_path: The location of the config path. 
+    """
+
+    sim, prop, eos = load_config(config_path)
+    plot(sim, prop, eos)
+
+
 if __name__ == '__main__':
     # Argument parsing for command-line usage
     parser = argparse.ArgumentParser(prog='2D Profile Plotter Athena++',
                                     description='Plots 2D profiles from Athena++ magnetar wind simulations.')
     parser.add_argument('-config', type=str,
                         help='Path to YML config file.')
+    parser.add_argument('-cprofile', action='store_true',
+                        help='Enable cProfile performance profiling.')
     
     args = parser.parse_args()
 
-    sim, prop, eos = load_config(args.config)
-    plot(sim, prop, eos) 
+    if not args.cprofile:
+        main(args.config)
+    else:
+        pr = cProfile.Profile()
+        pr.enable()
+        main(args.config)
+        pr.disable()
 
+        s = io.StringIO()
+        ps = pstats.Stats(pr, stream=s).sort_stats('cumulative')
+        ps.print_stats()
+        print(s.getvalue())

@@ -117,7 +117,7 @@ def plot(config: SimulationConfig, eos_config: EOSConfig, additional_config: Add
     y2 = df['vel3'][phi][theta]
     if np.any(y2):
         axes[1][1].plot(x, y2, linestyle='--', label=r'$v_{\phi}$', color='#1f77b4')
-    y3 = df['Bcc1'][phi][theta]/(np.sqrt(4 * math.pi) * np.sqrt(df['rho'][phi][theta]))
+    y3 = df['Bcc1'][phi][theta]/(np.sqrt(df['rho'][phi][theta]))
     if np.any(y3):
         axes[1][1].plot(x, y3, linestyle='-.', label=r'$\frac{B_r}{\sqrt{4\pi\rho}}$', color='#1f77b4')
     if not isinstance(eos_config, IsothermalEOSConfig):
