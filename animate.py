@@ -15,8 +15,23 @@ from typing import *
 from tqdm import tqdm
 from sim_configs import *
 from dataclasses import replace
+from functools import wraps 
 
 
+# * Adapted from pg. 31 of High Performance Python by Gorelick & Ozsvald, 2nd ed. 
+# Function decorator to time a function.
+def timefn(fn):
+    @wraps(fn)
+    def measure_time(*args, **kwargs):
+        t0 = time.time()
+        returns = fn(*args, **kwargs)
+        tf = time.time()
+        print(f'Fcn *{fn.__name__}* completed in {tf-t0}s.')
+        return returns
+    return measure_time
+
+
+@timefn
 def animate(config: SimulationConfig, animation_config: AnimationConfig) -> None:
     """
     Animates a directory of 2D profile images of all the same size. <br>
@@ -35,8 +50,6 @@ def animate(config: SimulationConfig, animation_config: AnimationConfig) -> None
     
     imageio.mimsave(os.path.join(config.output_path, animation_config.animation_name), images)
 
-    print(f'Fcn *animate* completed in {time.time()-t0}s')
-
 
 def receive(config: SimulationConfig) -> Tuple[List, List]:
     """
@@ -50,9 +63,9 @@ def receive(config: SimulationConfig) -> Tuple[List, List]:
 
     for root, _, files in os.walk(config.prim_file):
         for fn in files:
-            if '.athdf' not in str(fn) or fn.startswith('.'):
+            if '.athdf' not in fn or fn.startswith('.'):
                 continue
-            if 'prim' in str(fn):
+            if 'prim' in fn:
                 prim.append(os.path.join(root, fn))
             else:
                 uov.append(os.path.join(root, fn))
@@ -62,6 +75,7 @@ def receive(config: SimulationConfig) -> Tuple[List, List]:
     return prim, uov
 
 
+@timefn
 def create(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_config: EOSConfig, animation_config: AnimationConfig) -> None:
     """
     Creates a directory of 2D profile images. <br>
@@ -81,10 +95,9 @@ def create(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_
     for _, (pfp, ufp) in enumerate(tqdm(zip(prim, uov), total=len(prim))):
         new_config = replace(config, prim_file=pfp, uov_file=ufp, output_path=os.path.join(config.output_path, f'{_:05d}.{animation_config.extension}'))
         prf.plot(new_config, stellar_properties, eos_config)
-    
-    print(f'Fcn *create* completed in {time.time()-t0}s')
 
 
+@timefn
 def find_min_max(config: SimulationConfig) -> None:
     """
     Finds the maximum and minimum v_r and v_phi values over the given boundaries. <br>
@@ -97,10 +110,10 @@ def find_min_max(config: SimulationConfig) -> None:
 
     values = {
         'vr': {
-            'max': 0, 'min': 0
+            'max': np.inf, 'min': -np.inf
         },
         'vphi': {
-            'max': 0, 'min': 0
+            'max': np.inf, 'min': -np.inf
         }
     }
 
@@ -109,8 +122,8 @@ def find_min_max(config: SimulationConfig) -> None:
     for _ in tqdm(range(len(prim))):
         pfp = prim[_]
         df = athena_read.athdf(pfp)
-        vr = df['vel1'][0]/1e9
-        vphi = df['vel3'][0]/1e9
+        vr = df['vel1'][0]*1e-9
+        vphi = df['vel3'][0]*1e-9
 
         r = df['x1v']
         theta = df['x2v']
@@ -122,20 +135,23 @@ def find_min_max(config: SimulationConfig) -> None:
         avgs_r.append(np.average(vr))
         avgs_phi.append(np.average(vphi))
 
-        if values['vr']['max'] < np.max(vr):
-            values['vr']['max'] = np.max(vr)
-        if values['vr']['min'] > np.min(vr):
-            values['vr']['min'] = np.min(vr)
-        if values['vphi']['max'] < np.max(vphi):
-            values['vphi']['max'] = np.max(vphi)
-        if values['vphi']['min'] > np.min(vphi):
-            values['vphi']['min'] = np.min(vphi)
+        vr_max = np.max(vr)
+        vr_min = np.min(vr)
+        vphi_max = np.max(vphi)
+        vphi_min = np.min(vphi)
+
+        if values['vr']['max'] < vr_max:
+            values['vr']['max'] = vr_max
+        if values['vr']['min'] > vr_min:
+            values['vr']['min'] = vr_min
+        if values['vphi']['max'] < vphi_max:
+            values['vphi']['max'] = vphi_max
+        if values['vphi']['min'] > vphi_min:
+            values['vphi']['min'] = vphi_min
     
     print(values)
     print(sum(avgs_r)/len(avgs_r))
     print(sum(avgs_phi)/len(avgs_phi))
-
-    print(f'Fcn *find_max_min* completed in {time.time()-t0}s')
 
 
 def load_config(yaml_path: str) -> Tuple[SimulationConfig, StellarPropConfig, EOSConfig, AnimationConfig]:
