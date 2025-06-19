@@ -110,10 +110,10 @@ def find_min_max(config: SimulationConfig) -> None:
 
     values = {
         'vr': {
-            'max': np.inf, 'min': -np.inf
+            'max': -np.inf, 'min': np.inf
         },
         'vphi': {
-            'max': np.inf, 'min': -np.inf
+            'max': -np.inf, 'min': np.inf
         }
     }
 
