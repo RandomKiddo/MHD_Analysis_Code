@@ -1,5 +1,6 @@
 import numpy as np
 
+
 from dataclasses import dataclass
 from typing import *
 
@@ -50,6 +51,12 @@ class SimulationConfig:
     phi_max: float = 360
     """Max phi degree value."""
 
+    verbose: int = 0
+    """
+    If details should be printed to the console. Will ruin clean tqdm outputs from loops. <br>
+    Set 0 for no outputs, 1 for full outputs.
+    """
+
 
 @dataclass
 class StellarPropConfig:
@@ -94,7 +101,6 @@ class IsothermalEOSConfig:
     """If iso colormesh should be used instead of the typical vr and vphi colormesh."""
 
 
-# General EOS data class
 @dataclass
 class GeneralEOSConfig:
     """General EOS Config."""
@@ -148,3 +154,4 @@ class AdditionalSimulation1DConfig:
 
     recursive: bool = False
     """If the plotter should run recursively, outputting profile plots for every athdf file in a directory."""
+
