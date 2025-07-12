@@ -27,6 +27,8 @@ def override_params(new_params: dict) -> bool:
         C1 = (8 * np.pi * PARAMS['rho'] * PARAMS['a']**2) / (PARAMS['B']**2)
         C2 = (-G * PARAMS['M']) / (PARAMS['R'] * PARAMS['a']**2)
         C3 = (PARAMS['alpha']**2 * PARAMS['R']**2) / (2* PARAMS['a']**2)
+
+        return True
     else:
         warnings.warn('Unable to override parameters due to missing keys. Defaulting to hard-coded parameters.')
         return False

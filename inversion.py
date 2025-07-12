@@ -40,13 +40,15 @@ def validate_function_signature(func: Callable[[float], float], name: str) -> No
     sig = inspect.signature(func)
     params = sig.parameters.values()
 
-    # Must have at least one required positional or positional-or-keyword argument (e.g., y)
-    has_required_arg = any(
-        p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD) and p.default == p.empty
-        for p in params
-    )
+    required_positional = [
+        p for p in params
+        if p.default == p.empty and p.kind in (
+            inspect.Parameter.POSITIONAL_ONLY,
+            inspect.Parameter.POSITIONAL_OR_KEYWORD
+        )
+    ]
 
-    if not has_required_arg:
+    if not len(required_positional) != 1:
         raise TypeError(f"Function '{name}' must have at least one required positional argument (like 'y')")
 
 
