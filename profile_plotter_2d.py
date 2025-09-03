@@ -103,6 +103,7 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     
     r_true = df['x1v']
     r_true = r_true[mask]
+    r_max = np.max(r_true)
     theta_true = df['x2v']
 
     # Prepare r-velocity data
