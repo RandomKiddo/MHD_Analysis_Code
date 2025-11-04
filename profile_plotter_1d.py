@@ -44,8 +44,9 @@ def plot(config: SimulationConfig, eos_config: EOSConfig, additional_config: Add
         
         # Recurisve functionality
         for _ in tqdm(range(file_count//2)):
-            prim = os.path.join(config.prim_file, f'parker.prim.{_:05d}.athdf')
-            uov = os.path.join(config.uov_file, f'parker.uov.{_:05d}.athdf')
+            pgen_name = config.pgen_name
+            prim = os.path.join(config.prim_file, f'{pgen_name}.prim.{_:05d}.athdf')
+            uov = os.path.join(config.uov_file, f'{pgen_name}.uov.{_:05d}.athdf')
             output = os.path.join(config.output_path, f'{_:05d}.png')
 
             new_config = replace(config, prim_file=prim, uov_file=uov, output_path=output)

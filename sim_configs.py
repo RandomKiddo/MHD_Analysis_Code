@@ -57,6 +57,11 @@ class SimulationConfig:
     Set 0 for no outputs, 1 for full outputs.
     """
 
+    pgen_name: str = 'parker'
+    """
+    The pgen name that effects the output athdf files.
+    """
+
 
 @dataclass
 class StellarPropConfig:
