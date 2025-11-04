@@ -62,6 +62,11 @@ class SimulationConfig:
     The pgen name that effects the output athdf files.
     """
 
+    athena_read_loc: str = '/Volumes/RESEARCHUSB/Research/DEBUG/vis/python'
+    """
+    The path location for the athena_read file necessary for reading the athdf files.
+    """
+
 
 @dataclass
 class StellarPropConfig:

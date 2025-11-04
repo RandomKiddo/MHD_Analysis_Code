@@ -8,13 +8,10 @@ Prasanna et. al.: https://ui.adsabs.harvard.edu/abs/2022MNRAS.517.3008P/abstract
 """
 
 import sys
-sys.path.insert(0, '/Volumes/RESEARCHUSB/Research/DEBUG/vis/python')
-
 import numpy as np
 import matplotlib.pyplot as plt 
 import matplotlib as mpl
 import os
-import athena_read
 import math
 import argparse
 import warnings
@@ -23,8 +20,10 @@ import yaml
 from tqdm import tqdm
 from sim_configs import *
 from dataclasses import replace
+from helpers import timefn
 
 
+@timefn
 def plot(config: SimulationConfig, eos_config: EOSConfig, additional_config: AdditionalSimulation1DConfig) -> None:
     """
     Plots the 1D profiles using the Athena++ simulation dataframe files. <br>
@@ -54,6 +53,9 @@ def plot(config: SimulationConfig, eos_config: EOSConfig, additional_config: Add
             plot(new_config, eos_config, new_additional_config)
         return  # Cut function
             
+    # Use the simulation config to load athena_read
+    sys.path.insert(0, config.athena_read_loc)
+    import athena_read
 
     # Read data frames
     df = athena_read.athdf(config.prim_file)

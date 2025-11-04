@@ -1,12 +1,9 @@
 import sys
-sys.path.insert(0, '/Volumes/RESEARCHUSB/Research/DEBUG/vis/python')
-
 import imageio
 import os
 import profile_plotter_2d as prf
 import argparse
 import time
-import athena_read
 import numpy as np
 import yaml
 import warnings
@@ -15,20 +12,7 @@ from typing import *
 from tqdm import tqdm
 from sim_configs import *
 from dataclasses import replace
-from functools import wraps 
-
-
-# * Adapted from pg. 31 of High Performance Python by Gorelick & Ozsvald, 2nd ed. 
-# Function decorator to time a function.
-def timefn(fn):
-    @wraps(fn)
-    def measure_time(*args, **kwargs):
-        t0 = time.time()
-        returns = fn(*args, **kwargs)
-        tf = time.time()
-        print(f'Fcn *{fn.__name__}* completed in {tf-t0}s.')
-        return returns
-    return measure_time
+from helpers import timefn
 
 
 @timefn
@@ -105,6 +89,10 @@ def find_min_max(config: SimulationConfig) -> None:
     """
 
     t0 = time.time()
+
+    # Use the simulation config to load athena_read
+    sys.path.insert(0, config.athena_read_loc)
+    import athena_read
 
     prim, uov = receive(config)
 

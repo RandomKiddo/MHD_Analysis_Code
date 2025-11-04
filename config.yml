@@ -1,9 +1,9 @@
 # Configuration file for use in 1d profile plotting, 2d profile plotting, and movie animations. 
 
 simulation:  # Simulation configuration data, constraints on the profile plotting.
-  prim_file: /users/PAS2229/nghugs2/URAP_iso/spread_fix_2d/B0=3e15_Omega0=209.44_cT=3e9_cutpgen_hse_highres/out_rho12_QW_B3e15_P20ms_L8e51_vrvth0_512_256_allheatingterms_CORRECTEDperfectBCs/  # Location of prim athdf file or directory of prim files.
-  uov_file: /users/PAS2229/nghugs2/URAP_iso/spread_fix_2d/B0=3e15_Omega0=209.44_cT=3e9_cutpgen_hse_highres/out_rho12_QW_B3e15_P20ms_L8e51_vrvth0_512_256_allheatingterms_CORRECTEDperfectBCs/  # Location of uov athdf file or directory of uov files.
-  output_path: /users/PAS2229/nghugs2/URAP_iso/spread_fix_2d/imgs/  # Output location plus filename and extension or directory of output files.
+  prim_file: /Users/nghugs/Documents/TempResearchHold/Athena_Analysis_Code/out/out  # Location of prim athdf file or directory of prim files.
+  uov_file: /Users/nghugs/Documents/TempResearchHold/Athena_Analysis_Code/out/out # Location of uov athdf file or directory of uov files.
+  output_path: /Users/nghugs/Documents/TempResearchHold/Athena_Analysis_Code/out/vis2d # Output location plus filename and extension or directory of output files.
   outer_boundary: 2e7  # Outer boundary restriction.
   density: 1  # Magnetic field line density.
   vr_range: [0, 10]  # Restriction on vr colormesh range.
@@ -14,13 +14,15 @@ simulation:  # Simulation configuration data, constraints on the profile plottin
   deg_phi: 180  # Phi degree value to use.
   n_phi: 1  # Number of phi cells.
   phi_max: 360  # Max phi value. 
+  pgen_name: pns_wind
+  athena_read_loc: /Volumes/RESEARCHUSB/Research/DEBUG/vis/python
 
 prop:  # Stellar properties, like mass, density, etc. 
   M: 2.7839e33  # Stellar mass in g.
   R: 1.2e6  # Stellar radius in cm.
-  B: 3e15  # Stellar magnetic field strength in G.
-  Omega: 209.4395102393  # Stellar rotation speed in s^-1.
-  rho: 4e11  # Stellar density in g/cm^3.
+  B: 0  # Stellar magnetic field strength in G.
+  Omega: 20.9439510239  # Stellar rotation speed in s^-1.
+  rho: 1e12  # Stellar density in g/cm^3.
 
 eos:  # EOS configuration.
   type: isothermal  # EOS type; 'general', 'isothermal', etc.
@@ -31,11 +33,11 @@ eos:  # EOS configuration.
 animation:  # Animation-specific configuration. Ignored if not needed.
   create: true  # If the 2d profiles need to be created.
   extension: png  # 2d profile image extension.
-  find: false  # If the max and min velocity values should be found across the domain.
+  find: true  # If the max and min velocity values should be found across the domain.
   animation_name: animation.mp4  # The animation name.
   
 1d:  # 1d-specific configuration. Ignored if not needed.
   deg_theta: 45  # Theta degree value to use.
-  n_theta: 128  # Number of theta cells.
+  n_theta: 256  # Number of theta cells.
   theta_max: 180  # Max theta value.
   recursive: true  # If 1d profiles should be made recursively through a directory. 
