@@ -10,14 +10,11 @@ Ravies et. al.: https://ui.adsabs.harvard.edu/abs/2023MNRAS.526.4418R/abstract
 """
 
 import sys
-sys.path.insert(0, '/Volumes/RESEARCHUSB/Research/DEBUG/vis/python')
-
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.cm as cm
-import athena_read
 import argparse
 import cmasher as cmr
 import math
@@ -43,6 +40,10 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     :param stellar_properties: Stellar properties constants dataclass from YAML. <br>
     :param eos_config: EOS configuration dataclass from YAML.
     """
+
+    # Use the simulation config to load athena_read
+    sys.path.insert(0, config.athena_read_loc)
+    import athena_read
 
     # Read the Athena data frames
     df = athena_read.athdf(config.prim_file)
@@ -222,7 +223,10 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     v_poloidal = ((df['vel1'][phi]**2)+(df['vel2'][phi]**2))
     v_alfven = ((Br**2)+(Btheta**2))/(df['rho'][phi])
     mag_B = np.sqrt((Br**2)+(Btheta**2)+(Bphi**2))
-    cos_theta = Br/mag_B
+    if np.any(mag_B == 0):  # Check for no MHD 
+        cos_theta = np.zeros(Br.shape)
+    else:
+        cos_theta = Br/mag_B
     v_fast_magnetosonic = 0.5*(
             (v_alfven)+(cs**2)+np.sqrt(
                 ((v_alfven)+(cs**2))**2 - 4*(v_alfven)*(cs**2)*(cos_theta**2)
