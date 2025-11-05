@@ -224,6 +224,10 @@ def plot(config: SimulationConfig, stellar_properties: StellarPropConfig, eos_co
     v_alfven = ((Br**2)+(Btheta**2))/(df['rho'][phi])
     mag_B = np.sqrt((Br**2)+(Btheta**2)+(Bphi**2))
     if np.any(mag_B == 0):  # Check for no MHD 
+        if not np.all(mag_B == 0):
+            warnings.warn(
+                'Magnitude of B-field has elements of value zero, but not everywhere. Setting cos(theta) to zero everywhere.'
+            )
         cos_theta = np.zeros(Br.shape)
     else:
         cos_theta = Br/mag_B
