@@ -1,0 +1,18 @@
+# The CITATION.cff file.
+
+cff-version: 1.2.0
+title: MHD Analysis Code
+message: >-
+  Profile plotting and specialized analysis codes for MHD in
+  different codebases
+type: software
+authors:
+  - given-names: Neil
+    family-names: Ghugare
+repository-code: 'https://github.com/RandomKiddo/MHD_Analysis_Code'
+keywords:
+  - python
+  - MHD
+  - astrophysics
+  - HPC
+license: BSD-3-Clause
